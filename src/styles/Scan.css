@@ -1,0 +1,535 @@
+/* ============================================================================
+   SCAN PAGE - Document scanning and OCR interface
+   Design: Form-based, step-by-step guidance for travelers
+   ============================================================================ */
+
+.scan {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--page-bg);
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.scan__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.scan__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.scan__back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scan__back-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.scan__back-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* ============================================================================
+   MAIN CONTENT
+   ============================================================================ */
+
+.scan__main {
+  flex: 1;
+  padding: 2rem 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Form layout */
+.scan__form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Error message */
+.scan__error {
+  padding: 1rem;
+  background: var(--color-danger-bg);
+  border-left: 4px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  margin: -0.5rem 0 1rem 0;
+}
+
+/* ============================================================================
+   FIELDSETS - Step-by-step sections
+   ============================================================================ */
+
+.scan__fieldset {
+  border: none;
+  padding: 1.5rem;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.scan__legend {
+  display: block;
+  margin-bottom: 1rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+/* ============================================================================
+   FILE UPLOAD SECTION
+   ============================================================================ */
+
+.scan__upload {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Hidden file input */
+.scan__file-input {
+  display: none;
+}
+
+/* Upload button */
+.scan__upload-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2rem;
+  border: 2px dashed var(--color-border);
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.scan__upload-button:hover:not(:disabled) {
+  border-color: var(--color-primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+.scan__upload-button:active:not(:disabled) {
+  border-color: var(--color-primary-dark);
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.scan__upload-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scan__upload-icon {
+  font-size: 1.5rem;
+}
+
+.scan__upload-text {
+  font-weight: 600;
+}
+
+/* File info */
+.scan__file-info {
+  padding: 0.75rem;
+  background: rgba(102, 126, 234, 0.05);
+  border-radius: 6px;
+  text-align: center;
+}
+
+.scan__file-name {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.scan__file-size {
+  margin: 0.25rem 0 0 0;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Image preview */
+.scan__preview {
+  overflow: hidden;
+  border-radius: 8px;
+  border: 1px solid var(--color-border);
+}
+
+.scan__preview-image {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 300px;
+  object-fit: contain;
+  background: var(--color-bg-secondary);
+}
+
+/* ============================================================================
+   LANGUAGE SELECTION SECTION
+   ============================================================================ */
+
+.scan__language {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.scan__label {
+  display: block;
+  font-weight: 500;
+  color: var(--color-text);
+  font-size: 0.95rem;
+}
+
+.scan__select {
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  font-size: 1rem;
+  font-family: inherit;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.scan__select:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.scan__select:disabled {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* ============================================================================
+   ACTIONS & SUBMIT
+   ============================================================================ */
+
+.scan__actions {
+  display: flex;
+  gap: 1rem;
+}
+
+.scan__submit-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem;
+  min-height: 48px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.scan__submit-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.scan__submit-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.scan__submit-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.scan__spinner {
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}
+
+/* ============================================================================
+   HELPER TEXT
+   ============================================================================ */
+
+.scan__helper {
+  padding: 1rem;
+  margin: 0;
+  background: rgba(102, 126, 234, 0.05);
+  border-left: 4px solid var(--color-primary);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  color: var(--color-primary);
+  text-align: center;
+}
+
+/* ============================================================================
+   TOPIC SELECTION SECTION
+   ============================================================================ */
+
+.scan__topic {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.scan__topic-description {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+  line-height: 1.4;
+}
+
+/* Topic options grid */
+.scan__topic-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+/* Individual topic option */
+.scan__topic-option {
+  position: relative;
+}
+
+/* Hidden radio input */
+.scan__topic-input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+  margin: 0;
+  pointer-events: none;
+}
+
+/* Topic label - styled as button */
+.scan__topic-label {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 1rem;
+  border: 2px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-bg);
+  color: var(--color-text);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  user-select: none;
+  min-height: 100px;
+  text-align: center;
+}
+
+/* Hover state */
+.scan__topic-option:hover .scan__topic-label {
+  border-color: var(--color-primary);
+  background: rgba(102, 126, 234, 0.05);
+}
+
+/* Checked state */
+.scan__topic-input:checked + .scan__topic-label {
+  border-color: var(--color-primary);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+/* Focus state for accessibility */
+.scan__topic-input:focus + .scan__topic-label {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+/* Disabled state */
+.scan__topic-input:disabled + .scan__topic-label {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Topic icon */
+.scan__topic-icon {
+  font-size: 1.75rem;
+  display: block;
+}
+
+/* Topic text */
+.scan__topic-text {
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 480px) {
+  .scan__header {
+    padding: 1rem 0.75rem;
+  }
+
+  .scan__title {
+    font-size: 1.25rem;
+  }
+
+  .scan__main {
+    padding: 1.5rem 0.75rem;
+  }
+
+  .scan__form {
+    gap: 1.5rem;
+  }
+
+  .scan__fieldset {
+    padding: 1.25rem;
+  }
+
+  .scan__upload-button {
+    padding: 1.5rem 1rem;
+    font-size: 0.95rem;
+  }
+
+  .scan__legend {
+    font-size: 0.95rem;
+  }
+
+  .scan__topic-options {
+    grid-template-columns: 1fr;
+  }
+
+  .scan__topic-label {
+    min-height: 80px;
+    padding: 0.75rem;
+  }
+
+  .scan__topic-text {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .scan__main {
+    padding: 1rem 0.5rem;
+  }
+
+  .scan__fieldset {
+    padding: 1rem;
+  }
+
+  .scan__upload-button {
+    padding: 1.25rem 0.75rem;
+  }
+
+  .scan__submit-btn {
+    padding: 0.75rem;
+    min-height: 44px;
+  }
+
+  .scan__topic-options {
+    grid-template-columns: 1fr;
+    gap: 0.75rem;
+  }
+
+  .scan__topic-label {
+    min-height: 70px;
+    padding: 0.5rem;
+    gap: 0.35rem;
+  }
+
+  .scan__topic-icon {
+    font-size: 1.5rem;
+  }
+
+  .scan__topic-text {
+    font-size: 0.75rem;
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .scan__upload-button,
+  .scan__submit-btn {
+    transition: none;
+  }
+
+  .scan__spinner {
+    animation: none;
+  }
+
+  .scan__topic-label {
+    transition: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .scan__fieldset {
+    border-width: 2px;
+  }
+
+  .scan__upload-button {
+    border-width: 3px;
+  }
+
+  .scan__topic-label {
+    border-width: 3px;
+  }
+
+  .scan__topic-input:checked + .scan__topic-label {
+    border-color: var(--color-primary);
+  }
+}

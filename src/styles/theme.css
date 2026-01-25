@@ -1,0 +1,301 @@
+/* ============================================================================
+   THEME SYSTEM - CSS Variables for Light & Dark modes
+   
+   This file defines the color palette and applies it based on data-theme
+   attribute on the root element. All color values are centralized here
+   for easy maintenance and consistent theming across the app.
+   
+   Usage: Use var(--color-name) in all CSS files instead of hardcoded colors
+   ============================================================================ */
+
+/* ============================================================================
+   ROOT ELEMENT - Initialize theme based on data-theme attribute
+   ============================================================================ */
+
+:root {
+  color-scheme: light;
+}
+
+:root[data-theme="light"] {
+  color-scheme: light;
+  /* ... light mode variables ... */
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  /* ... dark mode variables ... */
+}
+
+/* ============================================================================
+   LIGHT THEME - Default, clean, professional colors
+   ============================================================================ */
+
+:root,
+:root[data-theme="light"] {
+  /* Primary colors - Main brand colors */
+  --color-primary: #667eea;
+  --color-primary-dark: #764ba2;
+  --color-primary-light: #8b9ef5;
+  --color-primary-rgb: 102, 126, 234;
+
+  /* Secondary colors - Neutral grays */
+  --color-text: #1f2937;
+  --color-text-secondary: #6b7280;
+  --color-text-muted: #9ca3af;
+  --color-text-inverse: #ffffff;
+
+  /* Background colors */
+  --color-bg: #ffffff;
+  --color-bg-secondary: #f8f9fa;
+  --color-bg-tertiary: #f3f4f6;
+  --color-bg-hover: #f0f1f7;
+
+  /* Page background - used by all pages */
+  --page-bg: #ffffff;
+  --page-bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+
+  /* Surface colors - Cards, containers */
+  --color-surface: #ffffff;
+  --color-surface-hover: #f8f9fa;
+  --color-surface-overlay: rgba(255, 255, 255, 0.95);
+
+  /* Border and divider colors */
+  --color-border: #e5e7eb;
+  --color-border-light: #f3f4f6;
+  --color-divider: #d1d5db;
+
+  /* State colors */
+  --color-success: #10b981;
+  --color-success-bg: rgba(16, 185, 129, 0.1);
+  --color-warning: #f59e0b;
+  --color-warning-bg: rgba(245, 158, 11, 0.1);
+  --color-danger: #ef4444;
+  --color-danger-bg: rgba(239, 68, 68, 0.1);
+  --color-info: #3b82f6;
+  --color-info-bg: rgba(59, 130, 246, 0.1);
+
+  /* Focus and interaction colors */
+  --color-focus-ring: rgba(102, 126, 234, 0.1);
+  --color-focus-border: #667eea;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.95);
+  --glass-blur: blur(10px);
+  --glass-border: rgba(255, 255, 255, 0.2);
+
+  /* Gradient (main brand gradient) */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #7a8ff5 0%, #8559b3 100%);
+}
+
+/* ============================================================================
+   DARK THEME - Professional dark mode with proper contrast
+   ============================================================================ */
+
+:root[data-theme="dark"] {
+  /* Primary colors - Adjusted for dark background */
+  --color-primary: #a8b8f8;
+  --color-primary-dark: #c9d5ff;
+  --color-primary-light: #8b9ef5;
+  --color-primary-rgb: 168, 184, 248;
+
+  /* Secondary colors - Light grays for dark background */
+  --color-text: #f3f4f6;
+  --color-text-secondary: #d1d5db;
+  --color-text-muted: #9ca3af;
+  --color-text-inverse: #1f2937;
+
+  /* Background colors */
+  --color-bg: #0f0f0f;
+  --color-bg-secondary: #1a1a1a;
+  --color-bg-tertiary: #262626;
+  --color-bg-hover: #2d2d2d;
+
+  /* Page background - used by all pages */
+  --page-bg: #0f0f0f;
+  --page-bg-gradient: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
+
+  /* Surface colors - Cards, containers */
+  --color-surface: #1a1a1a;
+  --color-surface-hover: #262626;
+  --color-surface-overlay: rgba(30, 30, 30, 0.9);
+
+  /* Border and divider colors */
+  --color-border: #404040;
+  --color-border-light: #2d2d2d;
+  --color-divider: #505050;
+
+  /* State colors - Adjusted for dark background */
+  --color-success: #34d399;
+  --color-success-bg: rgba(52, 211, 153, 0.15);
+  --color-warning: #fbbf24;
+  --color-warning-bg: rgba(251, 191, 36, 0.15);
+  --color-danger: #f87171;
+  --color-danger-bg: rgba(248, 113, 113, 0.15);
+  --color-info: #60a5fa;
+  --color-info-bg: rgba(96, 165, 250, 0.15);
+
+  /* Focus and interaction colors */
+  --color-focus-ring: rgba(168, 184, 248, 0.1);
+  --color-focus-border: #a8b8f8;
+
+  /* Shadows - Darker for dark theme */
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+
+  /* Glassmorphism */
+  --glass-bg: rgba(30, 30, 30, 0.9);
+  --glass-blur: blur(10px);
+  --glass-border: rgba(168, 184, 248, 0.1);
+
+  /* Gradient (adjusted for dark background) */
+  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  --gradient-primary-hover: linear-gradient(135deg, #7a8ff5 0%, #8559b3 100%);
+}
+
+/* ============================================================================
+   SMOOTH THEME TRANSITIONS
+   Enable smooth color transitions when switching themes
+   ============================================================================ */
+
+html {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+body {
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* Transition for most elements */
+button,
+input,
+select,
+textarea {
+  transition: background-color 0.3s ease, color 0.3s ease,
+    border-color 0.3s ease;
+}
+
+/* ============================================================================
+   BODY DEFAULTS - Apply theme to body element
+   ============================================================================ */
+
+body {
+  background-color: var(--page-bg);
+  color: var(--color-text);
+  transition: background-color 0.3s ease, color 0.3s ease;
+}
+
+/* ============================================================================
+   COMMON ELEMENT COLORS - Apply theme to all elements
+   ============================================================================ */
+
+a {
+  color: var(--color-primary);
+}
+
+a:hover {
+  color: var(--color-primary-dark);
+}
+
+/* Input elements */
+input,
+select,
+textarea {
+  background-color: var(--color-surface);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--color-focus-border);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Code blocks */
+code,
+pre {
+  background-color: var(--color-bg-tertiary);
+  color: var(--color-text);
+  border-color: var(--color-border);
+}
+
+/* ============================================================================
+   UTILITY CLASSES FOR THEME-AWARE COMPONENTS
+   ============================================================================ */
+
+/* Glass background effect */
+.glass-bg {
+  background: var(--glass-bg) !important;
+  backdrop-filter: var(--glass-blur);
+  border: 1px solid var(--glass-border);
+}
+
+/* Shadow utilities */
+.shadow-sm {
+  box-shadow: var(--shadow-sm);
+}
+
+.shadow-md {
+  box-shadow: var(--shadow-md);
+}
+
+.shadow-lg {
+  box-shadow: var(--shadow-lg);
+}
+
+/* Gradient utilities */
+.gradient-primary {
+  background: var(--gradient-primary);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+/* ============================================================================
+   ACCESSIBILITY - Ensure proper contrast in both themes
+   ============================================================================ */
+
+@media (prefers-contrast: more) {
+  :root[data-theme="light"] {
+    --color-text: #000000;
+    --color-text-secondary: #333333;
+    --color-border: #cccccc;
+  }
+
+  :root[data-theme="dark"] {
+    --color-text: #ffffff;
+    --color-text-secondary: #e0e0e0;
+    --color-border: #666666;
+  }
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  html,
+  body,
+  button,
+  input,
+  select,
+  textarea {
+    transition: none;
+  }
+}
+
+/* ============================================================================
+   PRINT STYLES - Use light theme for printing
+   ============================================================================ */
+
+@media print {
+  :root {
+    --color-bg: #ffffff;
+    --color-text: #000000;
+  }
+}

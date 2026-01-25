@@ -1,0 +1,462 @@
+/* ============================================================================
+   CONVERSATION PAGE - Chat interface for scanning and asking questions
+   Design: Clean messaging interface optimized for readability and mobile
+   ============================================================================ */
+
+.conversation {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: var(--page-bg);
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.conversation__header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+/* Back button - primary navigation */
+.conversation__back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.conversation__back-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.conversation__back-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* Title section - flex grow to center */
+.conversation__title-section {
+  flex: 1;
+  min-width: 0;
+}
+
+.conversation__title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Header action buttons - rename, delete */
+.conversation__header-actions {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+
+.conversation__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  opacity: 0.7;
+}
+
+.conversation__action-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+  opacity: 1;
+}
+
+.conversation__action-btn--danger:hover {
+  background: var(--color-danger-bg);
+}
+
+/* ============================================================================
+   MAIN CHAT AREA
+   ============================================================================ */
+
+.conversation__body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--page-bg);
+}
+
+/* Empty state */
+.conversation__empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: var(--color-text-muted);
+  font-size: 1rem;
+  text-align: center;
+}
+
+/* Individual message container */
+.conversation__message {
+  display: flex;
+  margin-bottom: 0.5rem;
+}
+
+/* User messages - align right */
+.conversation__message--user {
+  justify-content: flex-end;
+}
+
+/* Assistant messages - align left */
+.conversation__message--assistant {
+  justify-content: flex-start;
+}
+
+/* Message bubble - card-style design */
+.conversation__bubble {
+  max-width: 85%;
+  padding: 1rem;
+  border-radius: 12px;
+  word-wrap: break-word;
+  box-shadow: var(--shadow-sm);
+}
+
+/* User bubble - colored background */
+.conversation__message--user .conversation__bubble {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border-bottom-right-radius: 4px;
+}
+
+/* Assistant bubble - light background */
+.conversation__message--assistant .conversation__bubble {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border-bottom-left-radius: 4px;
+  border: 1px solid var(--color-border);
+}
+
+/* Message text */
+.conversation__text {
+  margin: 0;
+  line-height: 1.5;
+  font-size: 1rem;
+}
+
+/* Cursor animation while typing */
+.conversation__cursor {
+  animation: blink 1s infinite;
+  margin-left: 2px;
+}
+
+@keyframes blink {
+  0%,
+  49% {
+    opacity: 1;
+  }
+  50%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Timestamp - subtle, below message */
+.conversation__timestamp {
+  display: block;
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  opacity: 0.6;
+}
+
+/* ============================================================================
+   ERROR MESSAGE
+   ============================================================================ */
+
+.conversation__error {
+  padding: 0.75rem 1rem;
+  margin: 0.5rem 1rem;
+  background: var(--color-danger-bg);
+  border-left: 4px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: 4px;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+/* ============================================================================
+   INPUT SECTION
+   ============================================================================ */
+
+.conversation__input-section {
+  padding: 1rem;
+  background: var(--color-surface);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* Form layout */
+.conversation__input-form {
+  display: flex;
+  gap: 0.75rem;
+  align-items: flex-end;
+}
+
+/* Input field */
+.conversation__input {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1.5px solid var(--color-border);
+  border-radius: 8px;
+  font-size: 1rem;
+  font-family: inherit;
+  transition: all 0.2s ease;
+  resize: none;
+  max-height: 120px;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.conversation__input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.conversation__input:disabled {
+  background: var(--color-bg-secondary);
+  color: var(--color-text-muted);
+  cursor: not-allowed;
+}
+
+/* Send button */
+.conversation__send-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  min-height: 40px;
+  min-width: 80px;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.conversation__send-btn:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+.conversation__send-btn:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+/* Disabled state */
+.conversation__send-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* Loading state - stop button */
+.conversation__send-btn--loading {
+  background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.8;
+  }
+}
+
+/* Icons and text in button */
+.conversation__send-icon,
+.conversation__stop-icon {
+  font-size: 1.1rem;
+}
+
+.conversation__send-text,
+.conversation__stop-text {
+  font-weight: 600;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 480px) {
+  .conversation__header {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .conversation__back-btn,
+  .conversation__action-btn {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+  }
+
+  .conversation__title {
+    font-size: 1.1rem;
+  }
+
+  .conversation__body {
+    padding: 0.75rem;
+    gap: 0.75rem;
+  }
+
+  .conversation__bubble {
+    max-width: 90%;
+    padding: 0.75rem;
+    font-size: 0.95rem;
+  }
+
+  .conversation__input-section {
+    padding: 0.75rem;
+  }
+
+  .conversation__input-form {
+    gap: 0.5rem;
+  }
+
+  .conversation__input {
+    padding: 0.625rem 0.75rem;
+    font-size: 1rem;
+  }
+
+  .conversation__send-btn {
+    padding: 0.625rem 1rem;
+    min-width: 70px;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .conversation__title {
+    font-size: 1rem;
+  }
+
+  .conversation__bubble {
+    max-width: 95%;
+    padding: 0.625rem;
+    font-size: 0.9rem;
+  }
+
+  .conversation__send-text,
+  .conversation__stop-text {
+    display: none;
+  }
+
+  .conversation__send-btn {
+    min-width: 40px;
+    padding: 0.625rem;
+  }
+}
+
+/* Landscape mode */
+@media (max-height: 500px) and (orientation: landscape) {
+  .conversation {
+    height: auto;
+  }
+
+  .conversation__body {
+    max-height: 300px;
+  }
+
+  .conversation__bubble {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY & PRINT
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .conversation__send-btn,
+  .conversation__back-btn,
+  .conversation__input {
+    transition: none;
+  }
+
+  .conversation__cursor {
+    animation: none;
+  }
+
+  .conversation__send-btn--loading {
+    animation: none;
+    opacity: 0.7;
+  }
+}
+
+@media (prefers-contrast: more) {
+  .conversation__bubble {
+    border-width: 2px;
+  }
+
+  .conversation__input {
+    border-width: 2px;
+  }
+}
+
+@media print {
+  .conversation__header,
+  .conversation__input-section,
+  .conversation__error {
+    display: none;
+  }
+
+  .conversation {
+    height: auto;
+    background: white;
+  }
+
+  .conversation__body {
+    padding: 0;
+  }
+
+  .conversation__bubble {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+}

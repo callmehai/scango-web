@@ -1,0 +1,350 @@
+/* ============================================================================
+   HOME PAGE - Main landing/entry point
+   Design: Clean, modern, friendly with clear call-to-action
+   ============================================================================ */
+
+.home {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+  background: var(--page-bg-gradient);
+  position: relative;
+}
+
+/* Settings button - fixed position top-right */
+.home__settings-btn {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: none;
+  border-radius: 12px;
+  background: var(--color-surface);
+  color: var(--color-text);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: var(--shadow-md);
+}
+
+.home__settings-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-lg);
+  background: var(--color-bg-hover);
+}
+
+.home__settings-btn:active {
+  transform: translateY(0);
+}
+
+.home__settings-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 4px var(--color-focus-ring);
+}
+
+/* Hero section with glassmorphism effect */
+.home__hero {
+  width: 100%;
+  max-width: 500px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  background: var(--glass-bg);
+  box-shadow: var(--shadow-lg);
+  padding: 3rem 2rem;
+}
+
+.home__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* Header section */
+.home__header {
+  text-align: center;
+}
+
+.home__title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+  letter-spacing: -0.5px;
+  color: var(--color-text);
+}
+
+.home__subtitle {
+  font-size: 1rem;
+  color: var(--color-text-secondary);
+  margin: 0;
+  font-weight: 500;
+  opacity: 0.85;
+}
+
+/* Gradient text effect */
+.gradient-text {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+/* Actions section - button layout */
+.home__actions {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Button component system */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 1rem 1.5rem;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* Ensure buttons are big enough for touch targets (48px minimum) */
+.btn--large {
+  min-height: 48px;
+  padding: 1.25rem 1.5rem;
+  font-size: 1.05rem;
+}
+
+/* Primary button - stands out, draws attention */
+.btn--primary {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+}
+
+.btn--primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+}
+
+.btn--primary:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.4);
+}
+
+/* Secondary button - less prominent, uses theme colors */
+.btn--secondary {
+  background: rgba(102, 126, 234, 0.1);
+  color: var(--color-primary);
+  border: 2px solid var(--color-primary);
+}
+
+.btn--secondary:hover {
+  background: rgba(102, 126, 234, 0.2);
+  transform: translateY(-2px);
+}
+
+.btn--secondary:active {
+  transform: translateY(0);
+}
+
+/* Disabled state for buttons */
+.btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Full width on mobile */
+.btn--full-mobile {
+  width: 100%;
+}
+
+/* Button icon and text separation */
+.btn__icon {
+  font-size: 1.3em;
+}
+
+.btn__text {
+  font-weight: 600;
+}
+
+/* Footer - Trust indicators and secondary info */
+.home__footer {
+  text-align: center;
+}
+
+.home__benefits {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  color: var(--color-text-secondary);
+}
+
+.benefit {
+  display: inline-block;
+  opacity: 0.8;
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 480px) {
+  .home {
+    padding: 4rem 0.75rem 0.75rem;
+  }
+
+  .home__settings-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 1.3rem;
+    top: 0.75rem;
+    right: 0.75rem;
+  }
+
+  .home__hero {
+    padding: 2rem 1.5rem;
+    border-radius: 16px;
+  }
+
+  .home__title {
+    font-size: 2rem;
+  }
+
+  .home__subtitle {
+    font-size: 0.95rem;
+  }
+
+  .home__actions {
+    gap: 0.75rem;
+  }
+
+  .btn--large {
+    padding: 1rem 1.25rem;
+    font-size: 1rem;
+  }
+
+  .home__benefits {
+    gap: 1rem;
+  }
+}
+
+@media (max-width: 360px) {
+  .home {
+    padding: 3.5rem 0.5rem 0.5rem;
+  }
+
+  .home__hero {
+    padding: 1.5rem 1rem;
+  }
+
+  .home__title {
+    font-size: 1.75rem;
+  }
+
+  .btn__icon {
+    font-size: 1.1em;
+  }
+
+  .btn__text {
+    font-size: 0.95rem;
+  }
+
+  .home__settings-btn {
+    width: 40px;
+    height: 40px;
+    font-size: 1.1rem;
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-height: 600px) and (orientation: landscape) {
+  .home {
+    min-height: auto;
+    padding: 1rem;
+  }
+
+  .home__hero {
+    padding: 1.5rem;
+  }
+
+  .home__content {
+    gap: 1.5rem;
+  }
+
+  .home__title {
+    font-size: 1.75rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .home__subtitle {
+    font-size: 0.9rem;
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY & PRINT STYLES
+   ============================================================================ */
+
+/* High contrast mode support */
+@media (prefers-contrast: more) {
+  .btn--primary {
+    border: 2px solid transparent;
+  }
+
+  .btn--secondary {
+    border-width: 3px;
+  }
+
+  .home__settings-btn {
+    border: 2px solid var(--color-text);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .btn,
+  .home__settings-btn {
+    transition: none;
+  }
+
+  .btn--primary:hover,
+  .btn--secondary:hover,
+  .home__settings-btn:hover {
+    transform: none;
+  }
+}
+
+/* Print styles */
+@media print {
+  .home {
+    background: white;
+    padding: 0;
+  }
+
+  .home__settings-btn {
+    display: none;
+  }
+
+  .home__hero {
+    box-shadow: none;
+    border: 1px solid #ccc;
+  }
+}

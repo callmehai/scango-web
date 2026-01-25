@@ -1,0 +1,304 @@
+/* ============================================================================
+   HISTORY PAGE - View and manage past conversations
+   Design: Clean list layout with card-based items
+   ============================================================================ */
+
+.history {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--page-bg);
+}
+
+/* ============================================================================
+   HEADER
+   ============================================================================ */
+
+.history__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.5rem 1rem;
+  background: var(--color-surface);
+  border-bottom: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+  flex-shrink: 0;
+}
+
+.history__title {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.history__back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--color-primary);
+  font-size: 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.history__back-btn:hover {
+  background: rgba(102, 126, 234, 0.1);
+}
+
+.history__back-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+/* ============================================================================
+   MAIN CONTENT AREA
+   ============================================================================ */
+
+.history__main {
+  flex: 1;
+  padding: 1.5rem 1rem;
+  max-width: 600px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* Error message */
+.history__error {
+  padding: 1rem;
+  margin-bottom: 1rem;
+  background: var(--color-danger-bg);
+  border-left: 4px solid var(--color-danger);
+  color: var(--color-danger);
+  border-radius: 4px;
+  font-size: 0.9rem;
+}
+
+/* Loading state */
+.history__loading {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: var(--color-text-secondary);
+  font-size: 1rem;
+}
+
+/* ============================================================================
+   EMPTY STATE
+   ============================================================================ */
+
+.history__empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 2rem;
+}
+
+.history__empty-icon {
+  font-size: 4rem;
+  margin-bottom: 1rem;
+  display: block;
+}
+
+.history__empty-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.history__empty-text {
+  margin: 0 0 1.5rem 0;
+  color: var(--color-text-secondary);
+  font-size: 0.95rem;
+}
+
+.history__cta-btn {
+  padding: 0.75rem 1.5rem;
+  border: none;
+  border-radius: 8px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.history__cta-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+}
+
+/* ============================================================================
+   CONVERSATIONS LIST
+   ============================================================================ */
+
+.history__list {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.history__item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: var(--color-surface);
+  border-radius: 12px;
+  border: 1px solid var(--color-border);
+  overflow: hidden;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow-sm);
+}
+
+.history__item:hover {
+  border-color: var(--color-divider);
+  box-shadow: var(--shadow-md);
+}
+
+/* Main clickable area */
+.history__item-main {
+  flex: 1;
+  padding: 1.25rem;
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: all 0.2s ease;
+}
+
+.history__item-main:hover {
+  background: rgba(102, 126, 234, 0.02);
+}
+
+/* Item content */
+.history__item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.history__item-title {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--color-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.history__item-time {
+  display: block;
+  font-size: 0.85rem;
+  color: var(--color-text-muted);
+}
+
+/* Arrow indicator */
+.history__item-arrow {
+  font-size: 1.5rem;
+  color: var(--color-border);
+  flex-shrink: 0;
+}
+
+/* Item actions */
+.history__item-actions {
+  display: flex;
+  gap: 0;
+  flex-shrink: 0;
+  border-left: 1px solid var(--color-border);
+}
+
+.history__action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  font-size: 1.1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border-right: 1px solid var(--color-border);
+}
+
+.history__action-btn:last-child {
+  border-right: none;
+}
+
+.history__action-btn:hover {
+  background: rgba(0, 0, 0, 0.05);
+}
+
+.history__action-btn--danger:hover {
+  background: var(--color-danger-bg);
+}
+
+/* ============================================================================
+   RESPONSIVE DESIGN
+   ============================================================================ */
+
+@media (max-width: 480px) {
+  .history__header {
+    padding: 1rem 0.75rem;
+  }
+
+  .history__title {
+    font-size: 1.25rem;
+  }
+
+  .history__main {
+    padding: 1rem 0.75rem;
+  }
+
+  .history__item {
+    flex-wrap: wrap;
+  }
+
+  .history__item-main {
+    padding: 1rem;
+    width: 100%;
+  }
+
+  .history__item-actions {
+    width: 100%;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .history__action-btn {
+    flex: 1;
+    border-right: none;
+  }
+
+  .history__action-btn:not(:last-child) {
+    border-right: 1px solid var(--color-border);
+  }
+}
+
+/* ============================================================================
+   ACCESSIBILITY
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  .history__item,
+  .history__item-main,
+  .history__action-btn {
+    transition: none;
+  }
+}

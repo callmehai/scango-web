@@ -49,6 +49,29 @@ button {
    PAGE STYLES
    ============================================================================ */
 
+/* ========== THEME TOKENS ========== */
+:root {
+  --modal-bg: #ffffff;
+  --modal-text: #111111;
+  --modal-subtext: #555555;
+  --modal-border: #dddddd;
+  --modal-input-bg: #ffffff;
+
+  --btn-cancel-bg: #f1f1f1;
+  --btn-cancel-text: #333333;
+}
+
+.app.dark {
+  --modal-bg: #1e1e1e;
+  --modal-text: #f1f1f1;
+  --modal-subtext: #b5b5b5;
+  --modal-border: #333333;
+  --modal-input-bg: #2a2a2a;
+
+  --btn-cancel-bg: #2f2f2f;
+  --btn-cancel-text: #e5e5e5;
+}
+
 @import "./Home.css";
 @import "./Scan.css";
 @import "./Conversation.css";

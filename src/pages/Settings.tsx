@@ -1,71 +1,78 @@
 import { useNavigate } from "react-router-dom";
-import { useTheme } from "../hooks/useTheme";
-import { useSettings, type Language } from "../hooks/useSettings";
+import { useSettings } from "../hooks/useSettings";
+import { SETTINGS_LANGUAGES } from "../constants/settingsLanguages";
+import { LANGUAGE_MAP, type TargetLanguage } from "../constants/languages";
+import { UI_TEXT } from "../constants/uiText";
+
 import "../styles/Settings.css";
 
 export default function Settings() {
   const navigate = useNavigate();
-  const { theme, setTheme } = useTheme();
-  const { targetLang, setTargetLang } = useSettings();
+  const { targetLang, setTargetLang, systemLang, setSystemLang } =
+    useSettings();
+
+  const t = UI_TEXT[systemLang];
 
   return (
     <div className="settings">
       {/* Header */}
       <header className="settings__header">
-        <h1 className="settings__title">⚙️ Cài đặt</h1>
+        <h1 className="settings__title">{t.settingsTitle}</h1>
         <button
-          className="settings__back-btn"
+          className="history__back-btn"
           onClick={() => navigate("/")}
-          aria-label="Back to home"
-          title="Quay về trang chủ"
+          aria-label={t.backHome}
+          title={t.backHome}
         >
-          ←
+          <svg
+            width="20"
+            height="20"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+          >
+            <path d="M19 12H5M12 19l-7-7 7-7" />
+          </svg>
         </button>
       </header>
 
       {/* Main content */}
       <main className="settings__main">
-        {/* Appearance section */}
+        {/* Language */}
         <section className="settings__section">
-          <h2 className="settings__section-title">🎨 Giao diện</h2>
+          <h2 className="settings__section-title">🌍 {t.languageTitle}</h2>
+
           <div className="settings__card">
+            {/* System language */}
             <div className="settings__item">
               <div className="settings__item-label">
-                <label htmlFor="theme-toggle" className="settings__label">
-                  Chế độ sáng/tối
+                <label htmlFor="system-lang" className="settings__label">
+                  {t.systemLangLabel}
                 </label>
-                <p className="settings__description">
-                  Chọn giao diện phù hợp với điều kiện chiếu sáng của bạn
-                </p>
+                <p className="settings__description">{t.systemLangDesc}</p>
               </div>
 
               <div className="settings__item-control">
                 <select
-                  id="theme-toggle"
+                  id="system-lang"
                   className="settings__select"
-                  value={theme}
-                  onChange={(e) => setTheme(e.target.value as "light" | "dark")}
+                  value={systemLang}
+                  onChange={(e) => setSystemLang(e.target.value as "vi" | "en")}
                 >
-                  <option value="light">☀️ Sáng</option>
-                  <option value="dark">🌙 Tối</option>
+                  <option value="vi">🇻🇳 {t.langVi}</option>
+                  <option value="en">🇺🇸 {t.langEn}</option>
                 </select>
               </div>
             </div>
-          </div>
-        </section>
 
-        {/* Language section */}
-        <section className="settings__section">
-          <h2 className="settings__section-title">🌍 Ngôn ngữ</h2>
-          <div className="settings__card">
+            {/* Target translation language */}
             <div className="settings__item">
               <div className="settings__item-label">
                 <label htmlFor="target-lang" className="settings__label">
-                  Ngôn ngữ dịch mặc định
+                  {t.targetLangLabel}
                 </label>
-                <p className="settings__description">
-                  Ngôn ngữ sẽ được sử dụng khi dịch tài liệu quét
-                </p>
+                <p className="settings__description">{t.targetLangDesc}</p>
               </div>
 
               <div className="settings__item-control">
@@ -73,33 +80,38 @@ export default function Settings() {
                   id="target-lang"
                   className="settings__select"
                   value={targetLang}
-                  onChange={(e) => setTargetLang(e.target.value as Language)}
+                  onChange={(e) =>
+                    setTargetLang(e.target.value as TargetLanguage)
+                  }
                 >
-                  <option value="vi">🇻🇳 Tiếng Việt</option>
-                  <option value="en">🇺🇸 English</option>
-                  <option value="ja">🇯🇵 日本語 (Japanese)</option>
-                  <option value="ko">🇰🇷 한국어 (Korean)</option>
-                  <option value="zh">🇨🇳 中文 (Chinese)</option>
-                  <option value="fr">🇫🇷 Français (French)</option>
+                  {SETTINGS_LANGUAGES.filter((code) => code !== "auto").map(
+                    (code) => {
+                      const lang = LANGUAGE_MAP[code];
+                      return (
+                        <option key={code} value={code}>
+                          {lang.flag} {lang.label}
+                        </option>
+                      );
+                    },
+                  )}
                 </select>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Info section */}
+        {/* Info */}
         <section className="settings__section">
-          <h2 className="settings__section-title">ℹ️ Thông tin</h2>
+          <h2 className="settings__section-title">ℹ️ {t.infoTitle}</h2>
+
           <div className="settings__card">
             <div className="settings__info">
               <p className="settings__info-text">
-                <strong>Scan & Chat AI v1.0</strong>
+                <strong>{t.appName} v1.0</strong>
               </p>
-              <p className="settings__info-text">
-                Ứng dụng trợ lý AI dành cho du khách
-              </p>
+              <p className="settings__info-text">{t.appDesc}</p>
               <p className="settings__info-text settings__info-muted">
-                Quét tài liệu, dịch, và chat với AI
+                {t.appSubDesc}
               </p>
             </div>
           </div>

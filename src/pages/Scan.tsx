@@ -20,6 +20,7 @@ export default function Scan() {
     targetLang: savedTargetLang,
     theme,
     toggleTheme,
+    setTargetLang: updateGlobalTargetLang,
   } = useSettings();
   const t = UI_TEXT[systemLang];
 
@@ -49,14 +50,12 @@ export default function Scan() {
   const [sourceLang, setSourceLang] = useState<TargetLanguage>("auto");
 
   const [targetLang, setTargetLang] = useState<TargetLanguage>(
-    (savedTargetLang as TargetLanguage) ?? "vnm",
+    savedTargetLang as TargetLanguage,
   );
 
   useEffect(() => {
-    if (savedTargetLang) {
-      setTargetLang(savedTargetLang as TargetLanguage);
-    }
-  }, [savedTargetLang]);
+    updateGlobalTargetLang(targetLang);
+  }, [targetLang]);
 
   // ---------- FILE HANDLING ----------
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -100,9 +99,10 @@ export default function Scan() {
       ? sourceLang
       : "auto";
 
-    form.append("sourceLang", sourceToSend);
+    form.append("rootLang", sourceToSend);
     form.append("targetLang", targetLang);
     form.append("topic", topic);
+    updateGlobalTargetLang(targetLang);
 
     const res = await fetch(
       `${api.defaults.baseURL}/conversations/scan-create`,
@@ -124,6 +124,8 @@ export default function Scan() {
     setError(null);
 
     try {
+      updateGlobalTargetLang(targetLang);
+
       const conversationId = await scanCreate(file);
       navigate(`/conversations/${conversationId}`);
     } catch {

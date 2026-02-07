@@ -3,6 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import api from "../api/axios";
 import type { Message } from "../types/message";
+import type { Conversation } from "../types/conversation";
 import { UI_TEXT } from "../constants/uiText";
 import { useSettings } from "../hooks/useSettings";
 import "../styles/Conversation.css";
@@ -11,7 +12,7 @@ export default function Conversation() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { systemLang } = useSettings();
+  const { systemLang, targetLang } = useSettings();
   const t = UI_TEXT[systemLang];
 
   const [messages, setMessages] = useState<Message[]>([]);
@@ -43,7 +44,12 @@ export default function Conversation() {
     try {
       const res = await fetch(
         `${api.defaults.baseURL}/conversations/${id}/scan-stream`,
-        { method: "POST" },
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        },
       );
 
       const reader = res.body!.getReader();
@@ -99,7 +105,7 @@ export default function Conversation() {
     for (const char of text) {
       if (stopRef.current) return;
 
-      await new Promise((r) => setTimeout(r, 24));
+      await new Promise((r) => setTimeout(r, 10));
 
       setMessages((m) => {
         const last = m[m.length - 1];
@@ -109,7 +115,7 @@ export default function Conversation() {
     }
   };
 
-  const sendStream = async (langCode?: string) => {
+  const sendStream = async (langCode: string) => {
     if (!input.trim() || loading) return;
 
     stopRef.current = false;
@@ -140,7 +146,7 @@ export default function Conversation() {
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             question: userMsg.content,
-            lang: langCode ?? "vnm",
+            lang: langCode,
           }),
         },
       );
@@ -392,7 +398,7 @@ export default function Conversation() {
           className="conversation__input-form"
           onSubmit={(e) => {
             e.preventDefault();
-            sendStream();
+            sendStream(targetLang);
           }}
         >
           <input
@@ -415,7 +421,7 @@ export default function Conversation() {
                 stopRef.current = true;
                 setLoading(false);
               } else {
-                sendStream();
+                sendStream(targetLang);
               }
             }}
             type="button"

@@ -7,6 +7,7 @@ import type { Conversation } from "../types/conversation";
 import { UI_TEXT } from "../constants/uiText";
 import { useSettings } from "../hooks/useSettings";
 import "../styles/Conversation.css";
+import ReactMarkdown from "react-markdown";
 
 export default function Conversation() {
   const { id } = useParams();
@@ -78,6 +79,11 @@ export default function Conversation() {
       setError(t.convStreamError);
     } finally {
       setLoading(false);
+      setTimeout(() => {
+        api.get(`/conversations/${id}`).then((res) => {
+          setTitle(res.data.title ?? t.convDefaultTitle);
+        });
+      }, 500);
     }
   };
 
@@ -332,8 +338,8 @@ export default function Conversation() {
                       <span></span>
                     </div>
                   ) : (
-                    <p className="conversation__text">
-                      {m.content as string}
+                    <div className="conversation__text">
+                      <ReactMarkdown>{m.content as string}</ReactMarkdown>
                       {showCursor && (
                         <span
                           className="conversation__cursor"
@@ -342,7 +348,7 @@ export default function Conversation() {
                           |
                         </span>
                       )}
-                    </p>
+                    </div>
                   )}
 
                   {m.createdAt && (

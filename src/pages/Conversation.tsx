@@ -25,10 +25,57 @@ export default function Conversation() {
   const bottomRef = useRef<HTMLDivElement>(null);
   const stopRef = useRef(false);
   const inputRef = useRef<HTMLInputElement>(null);
+  const workerRef = useRef<Worker | null>(null);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [renameData, setRenameData] = useState<{ title: string } | null>(null);
+
+  // Initialize worker
+  useEffect(() => {
+    workerRef.current = new Worker(
+      new URL("../workers/typingWorker.ts", import.meta.url),
+      { type: "module" },
+    );
+
+    return () => workerRef.current?.terminate();
+  }, []);
+
+  const appendAssistantText = (text: string) => {
+    setMessages((prev) => {
+      const last = prev[prev.length - 1];
+      if (!last || last.role !== "assistant") return prev;
+
+      return [...prev.slice(0, -1), { ...last, content: last.content + text }];
+    });
+  };
+
+  const typeTextSlowly = async (text: string) => {
+    return new Promise<void>((resolve) => {
+      if (!workerRef.current) {
+        resolve();
+        return;
+      }
+
+      const messageHandler = (event: MessageEvent<string>) => {
+        if (stopRef.current) {
+          workerRef.current?.removeEventListener("message", messageHandler);
+          resolve();
+          return;
+        }
+
+        if (event.data === "__done__") {
+          workerRef.current?.removeEventListener("message", messageHandler);
+          resolve();
+        } else {
+          appendAssistantText(event.data);
+        }
+      };
+
+      workerRef.current.addEventListener("message", messageHandler);
+      workerRef.current.postMessage({ text, delay: 10, batch: 20 });
+    });
+  };
 
   const startScanStream = async () => {
     stopRef.current = false;
@@ -62,7 +109,7 @@ export default function Conversation() {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
+        const chunk = decoder.decode(value, { stream: true });
         const lines = chunk.split("\n");
 
         for (const line of lines) {
@@ -106,20 +153,6 @@ export default function Conversation() {
       }
     });
   }, [id]);
-
-  const typeTextSlowly = async (text: string) => {
-    for (const char of text) {
-      if (stopRef.current) return;
-
-      await new Promise((r) => setTimeout(r, 10));
-
-      setMessages((m) => {
-        const last = m[m.length - 1];
-        if (!last || last.role !== "assistant") return m;
-        return [...m.slice(0, -1), { ...last, content: last.content + char }];
-      });
-    }
-  };
 
   const sendStream = async (langCode: string) => {
     if (!input.trim() || loading) return;
@@ -168,7 +201,7 @@ export default function Conversation() {
         const { value, done } = await reader.read();
         if (done) break;
 
-        const chunk = decoder.decode(value);
+        const chunk = decoder.decode(value, { stream: true });
         const lines = chunk.split("\n");
 
         for (const line of lines) {

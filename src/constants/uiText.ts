@@ -2,6 +2,7 @@ export const UI_TEXT = {
     vi: {
         appName: "Scan & Chat AI",
         settings: "Cài đặt",
+        settingsDescription: "Tùy chỉnh ngôn ngữ và giao diện",
 
         homeSubtitle: "Quét tài liệu · OCR · Hỏi đáp thông minh với AI",
 
@@ -35,6 +36,7 @@ export const UI_TEXT = {
 
         langVi: "Vietnamese (Tiếng Việt)",
         langEn: "English",
+        scanLangAutoDetect: "Tự động phát hiện ngôn ngữ",
 
         infoTitle: "Thông tin",
         appDesc: "Ứng dụng trợ lý AI dành cho du khách",
@@ -101,6 +103,27 @@ export const UI_TEXT = {
         historyRenameError: "Không thể đổi tên cuộc trò chuyện",
         historyDeleteError: "Không thể xóa cuộc trò chuyện",
 
+        historySearchPlaceholder: "Tìm theo tiêu đề...",
+        historyFilterAllTopics: "Tất cả chủ đề",
+        historyLoadMore: "Xem thêm",
+        historyLoadingMore: "Đang tải...",
+        historyNoResults: "Không tìm thấy cuộc trò chuyện nào",
+        historyShowingCount: (shown: number, total: number) =>
+          `Hiển thị ${shown} / ${total}`,
+        historyPaginationPrev: "Trước",
+        historyPaginationNext: "Sau",
+        historyPageOf: (page: number, totalPages: number) =>
+          `Trang ${page} / ${totalPages}`,
+        historyPerPage: "Mỗi trang",
+        historyShowingRange: (from: number, to: number, total: number) =>
+          `Hiển thị ${from}-${to} trong tổng số ${total} kết quả`,
+        historyViewGrid: "Xem dạng lưới",
+        historyViewList: "Xem dạng danh sách",
+        historyColName: "Tên",
+        historyColTopic: "Chủ đề",
+        historyColCreated: "Ngày tạo",
+        historyColActions: "Thao tác",
+
         save: "Lưu",
         cancelBtn: "Hủy",
         delete: "Xóa",
@@ -157,6 +180,7 @@ export const UI_TEXT = {
     en: {
         appName: "Scan & Chat AI",
         settings: "Settings",
+        settingsDescription: "Customize language and appearance",
 
         homeSubtitle: "Scan documents · OCR · Smart AI chat",
 
@@ -190,6 +214,7 @@ export const UI_TEXT = {
 
         langVi: "Vietnamese (Tiếng Việt)",
         langEn: "English",
+        scanLangAutoDetect: "Auto Detect",
 
         infoTitle: "Information",
         appDesc: "AI assistant application for travelers",
@@ -255,6 +280,27 @@ export const UI_TEXT = {
 
         historyRenameError: "Failed to rename conversation",
         historyDeleteError: "Failed to delete conversation",
+
+        historySearchPlaceholder: "Search by title...",
+        historyFilterAllTopics: "All topics",
+        historyLoadMore: "Load more",
+        historyLoadingMore: "Loading...",
+        historyNoResults: "No conversations found",
+        historyShowingCount: (shown: number, total: number) =>
+          `Showing ${shown} of ${total}`,
+        historyPaginationPrev: "Prev",
+        historyPaginationNext: "Next",
+        historyPageOf: (page: number, totalPages: number) =>
+          `Page ${page} of ${totalPages}`,
+        historyPerPage: "Per page",
+        historyShowingRange: (from: number, to: number, total: number) =>
+          `Showing ${from}-${to} of ${total} results`,
+        historyViewGrid: "Grid view",
+        historyViewList: "List view",
+        historyColName: "Name",
+        historyColTopic: "Topic",
+        historyColCreated: "Created",
+        historyColActions: "Actions",
 
         save: "Save",
         cancelBtn: "Cancel",

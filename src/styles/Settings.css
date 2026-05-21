@@ -85,7 +85,14 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 20px 0;
+  /* Reserve space for global BackButton (top-left) and HeaderControls (top-right) */
+  padding: 20px 80px;
+}
+
+@media (max-width: 480px) {
+  .settings__header {
+    padding: 16px 64px;
+  }
 }
 
 .settings__title {
@@ -168,6 +175,7 @@
    ============================================ */
 
 .settings__card {
+  position: relative;
   background: var(--settings-card-bg);
   backdrop-filter: blur(20px);
   border: 1px solid var(--settings-card-border);
@@ -180,6 +188,20 @@
 .settings__card:hover {
   background: var(--settings-card-hover);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+/* When a card hosts an open dropdown, lift its whole stacking context so the
+   floating panel sits above sibling cards that create their own (via backdrop-filter). */
+.settings__section:has(.dropdown__panel) {
+  position: relative;
+  z-index: 100;
+}
+
+.settings__card:has(.dropdown__panel) {
+  /* Disable backdrop-filter so it doesn't create a clipping stacking context
+     for the dropdown panel painted inside it. */
+  backdrop-filter: none;
+  z-index: 100;
 }
 
 /* ============================================

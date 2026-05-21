@@ -1,13 +1,50 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
 import api from "../api/axios";
 import type { Message } from "../types/message";
-import type { Conversation } from "../types/conversation";
 import { UI_TEXT } from "../constants/uiText";
 import { useSettings } from "../hooks/useSettings";
 import "../styles/Conversation.css";
 import ReactMarkdown from "react-markdown";
+import ActionMenu from "../components/ActionMenu";
+
+async function consumeSseStream(
+  reader: ReadableStreamDefaultReader<Uint8Array>,
+  signal: AbortSignal,
+  onText: (text: string) => Promise<void> | void,
+) {
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    if (signal.aborted) return;
+
+    const { value, done } = await reader.read();
+    if (done) return;
+
+    buffer += decoder.decode(value, { stream: true });
+
+    let sepIdx: number;
+    while ((sepIdx = buffer.indexOf("\n\n")) !== -1) {
+      const eventBlock = buffer.slice(0, sepIdx);
+      buffer = buffer.slice(sepIdx + 2);
+
+      for (const line of eventBlock.split("\n")) {
+        if (!line.startsWith("data: ")) continue;
+        const data = line.slice(6);
+        if (data === "[DONE]") return;
+
+        try {
+          const text = JSON.parse(data) as string;
+          if (signal.aborted) return;
+          await onText(text);
+        } catch {
+          // tolerate malformed event, keep streaming
+        }
+      }
+    }
+  }
+}
 
 export default function Conversation() {
   const { id } = useParams();
@@ -24,61 +61,37 @@ export default function Conversation() {
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const stopRef = useRef(false);
+  const abortRef = useRef<AbortController | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  const workerRef = useRef<Worker | null>(null);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [renameData, setRenameData] = useState<{ title: string } | null>(null);
 
-  // Initialize worker
+  // Cleanup on unmount — abort any in-flight stream
   useEffect(() => {
-    workerRef.current = new Worker(
-      new URL("../workers/typingWorker.ts", import.meta.url),
-      { type: "module" },
-    );
-
-    return () => workerRef.current?.terminate();
+    return () => {
+      stopRef.current = true;
+      abortRef.current?.abort();
+    };
   }, []);
 
+  // Append SSE chunk straight to the assistant message. No fake typing — the
+  // network already delivers tokens at a natural pace; re-buffering through a
+  // worker introduced visible "stop/start" jitter.
   const appendAssistantText = (text: string) => {
     setMessages((prev) => {
       const last = prev[prev.length - 1];
       if (!last || last.role !== "assistant") return prev;
-
       return [...prev.slice(0, -1), { ...last, content: last.content + text }];
-    });
-  };
-
-  const typeTextSlowly = async (text: string) => {
-    return new Promise<void>((resolve) => {
-      if (!workerRef.current) {
-        resolve();
-        return;
-      }
-
-      const messageHandler = (event: MessageEvent<string>) => {
-        if (stopRef.current) {
-          workerRef.current?.removeEventListener("message", messageHandler);
-          resolve();
-          return;
-        }
-
-        if (event.data === "__done__") {
-          workerRef.current?.removeEventListener("message", messageHandler);
-          resolve();
-        } else {
-          appendAssistantText(event.data);
-        }
-      };
-
-      workerRef.current.addEventListener("message", messageHandler);
-      workerRef.current.postMessage({ text, delay: 10, batch: 20 });
     });
   };
 
   const startScanStream = async () => {
     stopRef.current = false;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
 
     const assistantMsg: Message = {
@@ -94,37 +107,24 @@ export default function Conversation() {
         `${api.defaults.baseURL}/conversations/${id}/scan-stream`,
         {
           method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
+          headers: { "Content-Type": "application/json" },
+          signal: controller.signal,
         },
       );
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
+      if (!res.ok || !res.body) throw new Error("Network error");
 
-      while (true) {
-        if (stopRef.current) break;
-
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-
-          const data = line.replace("data: ", "");
-          if (data === "[DONE]") break;
-
-          const text = JSON.parse(data);
-          await typeTextSlowly(text);
-        }
+      await consumeSseStream(
+        res.body.getReader(),
+        controller.signal,
+        appendAssistantText,
+      );
+    } catch (err) {
+      if ((err as Error)?.name !== "AbortError") {
+        setError(t.convStreamError);
       }
-    } catch {
-      setError(t.convStreamError);
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setLoading(false);
       setTimeout(() => {
         api.get(`/conversations/${id}`).then((res) => {
@@ -158,6 +158,9 @@ export default function Conversation() {
     if (!input.trim() || loading) return;
 
     stopRef.current = false;
+    abortRef.current?.abort();
+    const controller = new AbortController();
+    abortRef.current = controller;
     setLoading(true);
     setError(null);
 
@@ -187,34 +190,19 @@ export default function Conversation() {
             question: userMsg.content,
             lang: langCode,
           }),
+          signal: controller.signal,
         },
       );
 
-      if (!res.ok) throw new Error("Network error");
+      if (!res.ok || !res.body) throw new Error("Network error");
 
-      const reader = res.body!.getReader();
-      const decoder = new TextDecoder();
-
-      while (true) {
-        if (stopRef.current) break;
-
-        const { value, done } = await reader.read();
-        if (done) break;
-
-        const chunk = decoder.decode(value, { stream: true });
-        const lines = chunk.split("\n");
-
-        for (const line of lines) {
-          if (!line.startsWith("data: ")) continue;
-
-          const data = line.replace("data: ", "");
-          if (data === "[DONE]") break;
-
-          const text = JSON.parse(data);
-          await typeTextSlowly(text);
-        }
-      }
-    } catch {
+      await consumeSseStream(
+        res.body.getReader(),
+        controller.signal,
+        appendAssistantText,
+      );
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
       setError(t.convSendError);
       setMessages((m) => [
         ...m,
@@ -225,6 +213,7 @@ export default function Conversation() {
         },
       ]);
     } finally {
+      if (abortRef.current === controller) abortRef.current = null;
       setLoading(false);
     }
   };
@@ -260,70 +249,59 @@ export default function Conversation() {
 
   return (
     <div className="conversation">
-      {/* Header */}
+      {/* Header — back button rendered globally via <BackButton /> in App.tsx */}
       <header className="conversation__header">
-        <button
-          className="conversation__back-btn"
-          onClick={() => navigate("/history")}
-          aria-label={t.convBackToHistoryAria}
-          title={t.convBackToHistoryTitle}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </button>
-
         <div className="conversation__title-section">
           <h1 className="conversation__title">{title}</h1>
         </div>
 
         <div className="conversation__header-actions">
-          <button
-            className="conversation__action-btn"
-            onClick={() => setRenameData({ title })}
-            title={t.convActionRename}
-            aria-label={t.convActionRename}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-
-          <button
-            className="conversation__action-btn conversation__action-btn--danger"
-            onClick={() => setShowDelete(true)}
-            title={t.convActionDelete}
-            aria-label={t.convActionDelete}
-          >
-            <svg
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              <line x1="10" y1="11" x2="10" y2="17" />
-              <line x1="14" y1="11" x2="14" y2="17" />
-            </svg>
-          </button>
+          <ActionMenu
+            ariaLabel={t.convActionRename}
+            items={[
+              {
+                label: t.convActionRename,
+                icon: (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                  </svg>
+                ),
+                onSelect: () => setRenameData({ title }),
+              },
+              {
+                label: t.convActionDelete,
+                danger: true,
+                icon: (
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <polyline points="3 6 5 6 21 6" />
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                    <line x1="10" y1="11" x2="10" y2="17" />
+                    <line x1="14" y1="11" x2="14" y2="17" />
+                  </svg>
+                ),
+                onSelect: () => setShowDelete(true),
+              },
+            ]}
+          />
         </div>
       </header>
 
@@ -340,7 +318,6 @@ export default function Conversation() {
         ) : (
           visibleMessages.map((m, idx) => {
             const isLast = idx === visibleMessages.length - 1;
-            const showCursor = loading && isLast && m.role === "assistant";
 
             return (
               <article
@@ -354,12 +331,12 @@ export default function Conversation() {
                 <div className="conversation__bubble">
                   {m.role === "image" && m.image ? (
                     <img
-                      src={`data:${m.image.mimeType};base64,${m.image.buffer}`}
+                      src={`${api.defaults.baseURL}/conversations/${id}/image`}
                       alt={t.convImageAlt}
                       className="conversation__image"
                       onClick={() =>
                         setPreviewImage(
-                          `data:${m.image?.mimeType};base64,${m.image?.buffer}`,
+                          `${api.defaults.baseURL}/conversations/${id}/image`,
                         )
                       }
                       style={{ cursor: "pointer" }}
@@ -373,14 +350,6 @@ export default function Conversation() {
                   ) : (
                     <div className="conversation__text">
                       <ReactMarkdown>{m.content as string}</ReactMarkdown>
-                      {showCursor && (
-                        <span
-                          className="conversation__cursor"
-                          aria-hidden="true"
-                        >
-                          |
-                        </span>
-                      )}
                     </div>
                   )}
 
@@ -458,6 +427,7 @@ export default function Conversation() {
             onClick={() => {
               if (loading) {
                 stopRef.current = true;
+                abortRef.current?.abort();
                 setLoading(false);
               } else {
                 sendStream(targetLang);
@@ -509,7 +479,7 @@ export default function Conversation() {
       {renameData && (
         <div className="modal-overlay" onClick={() => setRenameData(null)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>
+            <h3 className="modal-title">
               <svg
                 width="20"
                 height="20"
@@ -517,16 +487,13 @@ export default function Conversation() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                style={{
-                  display: "inline-block",
-                  verticalAlign: "middle",
-                  marginRight: "8px",
-                }}
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
                 <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
               </svg>
-              {t.convRenameTitle}
+              <span>{t.convRenameTitle}</span>
             </h3>
 
             <input
@@ -564,7 +531,7 @@ export default function Conversation() {
       {showDelete && (
         <div className="modal-overlay" onClick={() => setShowDelete(false)}>
           <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3>
+            <h3 className="modal-title modal-title--danger">
               <svg
                 width="20"
                 height="20"
@@ -572,19 +539,16 @@ export default function Conversation() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                style={{
-                  display: "inline-block",
-                  verticalAlign: "middle",
-                  marginRight: "8px",
-                }}
+                strokeLinecap="round"
+                strokeLinejoin="round"
               >
                 <circle cx="12" cy="12" r="10" />
                 <line x1="15" y1="9" x2="9" y2="15" />
                 <line x1="9" y1="9" x2="15" y2="15" />
               </svg>
-              {t.convDeleteTitle}
+              <span>{t.convDeleteTitle}</span>
             </h3>
-            <p>{t.convDeleteConfirm}</p>
+            <p className="modal-text">{t.convDeleteConfirm}</p>
 
             <div className="modal-actions">
               <button

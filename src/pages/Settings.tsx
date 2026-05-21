@@ -1,13 +1,12 @@
-import { useNavigate } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
 import { SETTINGS_LANGUAGES } from "../constants/settingsLanguages";
 import { LANGUAGE_MAP, type TargetLanguage } from "../constants/languages";
 import { UI_TEXT } from "../constants/uiText";
+import Dropdown from "../components/Dropdown";
 
 import "../styles/Settings.css";
 
 export default function Settings() {
-  const navigate = useNavigate();
   const { targetLang, setTargetLang, systemLang, setSystemLang } =
     useSettings();
 
@@ -15,26 +14,9 @@ export default function Settings() {
 
   return (
     <div className="settings">
-      {/* Header */}
+      {/* Header — back rendered globally via <BackButton /> */}
       <header className="settings__header">
         <h1 className="settings__title">{t.settingsTitle}</h1>
-        <button
-          className="history__back-btn"
-          onClick={() => navigate("/")}
-          aria-label={t.backHome}
-          title={t.backHome}
-        >
-          <svg
-            width="20"
-            height="20"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-          >
-            <path d="M19 12H5M12 19l-7-7 7-7" />
-          </svg>
-        </button>
       </header>
 
       {/* Main content */}
@@ -54,15 +36,16 @@ export default function Settings() {
               </div>
 
               <div className="settings__item-control">
-                <select
-                  id="system-lang"
-                  className="settings__select"
+                <Dropdown<"vi" | "en">
                   value={systemLang}
-                  onChange={(e) => setSystemLang(e.target.value as "vi" | "en")}
-                >
-                  <option value="vi">🇻🇳 {t.langVi}</option>
-                  <option value="en">🇺🇸 {t.langEn}</option>
-                </select>
+                  onChange={setSystemLang}
+                  ariaLabel={t.systemLangLabel}
+                  minWidth={220}
+                  options={[
+                    { value: "vi", label: `🇻🇳 ${t.langVi}` },
+                    { value: "en", label: `🇺🇸 ${t.langEn}` },
+                  ]}
+                />
               </div>
             </div>
 
@@ -76,25 +59,21 @@ export default function Settings() {
               </div>
 
               <div className="settings__item-control">
-                <select
-                  id="target-lang"
-                  className="settings__select"
+                <Dropdown<TargetLanguage>
                   value={targetLang}
-                  onChange={(e) =>
-                    setTargetLang(e.target.value as TargetLanguage)
-                  }
-                >
-                  {SETTINGS_LANGUAGES.filter((code) => code !== "auto").map(
-                    (code) => {
-                      const lang = LANGUAGE_MAP[code];
-                      return (
-                        <option key={code} value={code}>
-                          {lang.flag} {lang.label}
-                        </option>
-                      );
-                    },
-                  )}
-                </select>
+                  onChange={setTargetLang}
+                  ariaLabel={t.targetLangLabel}
+                  minWidth={260}
+                  options={SETTINGS_LANGUAGES.filter(
+                    (code) => code !== "auto",
+                  ).map((code) => {
+                    const lang = LANGUAGE_MAP[code];
+                    return {
+                      value: code,
+                      label: `${lang.flag} ${lang.label}`,
+                    };
+                  })}
+                />
               </div>
             </div>
           </div>

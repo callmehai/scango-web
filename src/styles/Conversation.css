@@ -132,15 +132,33 @@
 .conversation__header {
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 16px 20px;
-  background: var(--conv-header-bg);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--conv-header-border);
-  position: sticky;
-  top: 0;
-  z-index: 100;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  gap: 12px;
+  /* min-height = BackButton top (16) + BackButton size (44) + bottom (16) = 76px.
+     With align-items: center, content sits at viewport-y=38 — same as the
+     floating BackButton (also centered at y=38). */
+  min-height: 76px;
+  padding: 0 20px;
+  /* Reserve space on both sides for floating BackButton (left) + HeaderControls (right) */
+  padding-left: 76px;
+  padding-right: 180px;
+  /* Transparent — no card background, just a thin separator line below */
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--conv-header-border, rgba(0, 0, 0, 0.08));
+  box-shadow: none;
+  backdrop-filter: none;
+  position: relative;
+}
+
+[data-theme="dark"] .conversation__header {
+  border-bottom-color: rgba(255, 255, 255, 0.08);
+}
+
+@media (max-width: 480px) {
+  .conversation__header {
+    padding-left: 60px;
+    padding-right: 130px;
+  }
 }
 
 .conversation__back-btn {
@@ -164,8 +182,13 @@
 }
 
 .conversation__title-section {
-  flex: 1;
+  /* Don't grow — keeps the kebab right after the title instead of being
+     pushed to the far right of the header bar. */
+  flex: 0 1 auto;
   min-width: 0;
+  /* Inner flex so the h1 vertically centers within the 76px header */
+  display: flex;
+  align-items: center;
 }
 
 .conversation__title {
@@ -173,6 +196,7 @@
   font-weight: 700;
   color: var(--conv-text-primary);
   margin: 0;
+  line-height: 1.2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -394,6 +418,11 @@
   color: var(--conv-timestamp);
   margin-top: 6px;
   opacity: 0.8;
+}
+
+[data-theme="light"] .conversation__message--user .conversation__timestamp {
+  color: rgba(255, 255, 255, 0.9);
+  opacity: 1;
 }
 
 /* Image */

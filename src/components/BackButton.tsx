@@ -14,7 +14,9 @@ export default function BackButton() {
   const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
 
-  if (location.pathname === "/") return null;
+  // Hide on root + public auth pages (login/register have their own switch link)
+  const hideOn = ["/", "/login", "/register"];
+  if (hideOn.includes(location.pathname)) return null;
 
   const to = location.pathname.startsWith("/conversations/") ? "/history" : "/";
 

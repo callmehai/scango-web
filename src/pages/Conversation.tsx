@@ -1,6 +1,6 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
-import api from "../api/axios";
+import api, { tokenStore } from "../api/axios";
 import type { Message } from "../types/message";
 import { UI_TEXT } from "../constants/uiText";
 import { useSettings } from "../hooks/useSettings";
@@ -50,10 +50,12 @@ export default function Conversation() {
   const { id } = useParams();
   const navigate = useNavigate();
 
-  const { systemLang, targetLang } = useSettings();
+  const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
 
   const [messages, setMessages] = useState<Message[]>([]);
+  const [hasImage, setHasImage] = useState(false);
+  const [imageBlobUrl, setImageBlobUrl] = useState<string | null>(null);
   const [title, setTitle] = useState<string>(t.convDefaultTitle);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -103,11 +105,15 @@ export default function Conversation() {
     setMessages((m) => [...m, assistantMsg]);
 
     try {
+      const accessToken = tokenStore.getAccess();
       const res = await fetch(
         `${api.defaults.baseURL}/conversations/${id}/scan-stream`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+          },
           signal: controller.signal,
         },
       );
@@ -138,23 +144,41 @@ export default function Conversation() {
     if (!id) return;
 
     api.get(`/conversations/${id}`).then((res) => {
-      const msgs = res.data.messages ?? [];
+      const msgs = (res.data.messages ?? []) as Message[];
 
       setMessages(msgs);
-      setTitle(res.data.title ?? t.convDefaultTitle);
+      setHasImage(Boolean(res.data.hasImage));
+      setTitle(res.data.title || t.convDefaultTitle);
 
-      const hasImage = msgs.some((m: Message) => m.role === "image");
-      const hasAssistantInDB = msgs.some(
-        (m: Message) => m.role === "assistant",
-      );
+      // Fetch image via auth'd request → blob URL so <img> tag can use it
+      if (res.data.hasImage) {
+        api
+          .get(`/conversations/${id}/image`, { responseType: "blob" })
+          .then((imgRes) => {
+            const url = URL.createObjectURL(imgRes.data as Blob);
+            setImageBlobUrl(url);
+          })
+          .catch(() => {
+            /* image missing — skip */
+          });
+      }
 
-      if (hasImage && !hasAssistantInDB) {
+      const hasAssistantInDB = msgs.some((m) => m.role === "assistant");
+      if (res.data.hasImage && !hasAssistantInDB) {
         startScanStream();
       }
     });
+
+    // cleanup blob URL on unmount / id change
+    return () => {
+      setImageBlobUrl((url) => {
+        if (url) URL.revokeObjectURL(url);
+        return null;
+      });
+    };
   }, [id]);
 
-  const sendStream = async (langCode: string) => {
+  const sendStream = async () => {
     if (!input.trim() || loading) return;
 
     stopRef.current = false;
@@ -181,15 +205,16 @@ export default function Conversation() {
     inputRef.current?.focus();
 
     try {
+      const accessToken = tokenStore.getAccess();
       const res = await fetch(
         `${api.defaults.baseURL}/conversations/${id}/ask-stream`,
         {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            question: userMsg.content,
-            lang: langCode,
-          }),
+          headers: {
+            "Content-Type": "application/json",
+            ...(accessToken && { Authorization: `Bearer ${accessToken}` }),
+          },
+          body: JSON.stringify({ question: userMsg.content }),
           signal: controller.signal,
         },
       );
@@ -311,6 +336,20 @@ export default function Conversation() {
         role="log"
         aria-label="Chat messages"
       >
+        {hasImage && imageBlobUrl && (
+          <article className="conversation__message conversation__message--image">
+            <div className="conversation__bubble">
+              <img
+                src={imageBlobUrl}
+                alt={t.convImageAlt}
+                className="conversation__image"
+                onClick={() => setPreviewImage(imageBlobUrl)}
+                style={{ cursor: "pointer" }}
+              />
+            </div>
+          </article>
+        )}
+
         {visibleMessages.length === 0 ? (
           <div className="conversation__empty">
             <p>{t.convEmptyText}</p>
@@ -329,19 +368,7 @@ export default function Conversation() {
                 }`}
               >
                 <div className="conversation__bubble">
-                  {m.role === "image" && m.image ? (
-                    <img
-                      src={`${api.defaults.baseURL}/conversations/${id}/image`}
-                      alt={t.convImageAlt}
-                      className="conversation__image"
-                      onClick={() =>
-                        setPreviewImage(
-                          `${api.defaults.baseURL}/conversations/${id}/image`,
-                        )
-                      }
-                      style={{ cursor: "pointer" }}
-                    />
-                  ) : m.role === "assistant" && loading && m.content === "" ? (
+                  {m.role === "assistant" && loading && m.content === "" ? (
                     <div className="conversation__typing">
                       <span></span>
                       <span></span>
@@ -349,7 +376,7 @@ export default function Conversation() {
                     </div>
                   ) : (
                     <div className="conversation__text">
-                      <ReactMarkdown>{m.content as string}</ReactMarkdown>
+                      <ReactMarkdown>{m.content}</ReactMarkdown>
                     </div>
                   )}
 
@@ -406,7 +433,7 @@ export default function Conversation() {
           className="conversation__input-form"
           onSubmit={(e) => {
             e.preventDefault();
-            sendStream(targetLang);
+            sendStream();
           }}
         >
           <input
@@ -430,7 +457,7 @@ export default function Conversation() {
                 abortRef.current?.abort();
                 setLoading(false);
               } else {
-                sendStream(targetLang);
+                sendStream();
               }
             }}
             type="button"

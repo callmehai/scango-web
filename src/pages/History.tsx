@@ -153,7 +153,7 @@ export default function History() {
   const handleDelete = async (id: string) => {
     try {
       await api.delete(`/conversations/${id}`);
-      setList((prev) => prev.filter((c) => c._id !== id));
+      setList((prev) => prev.filter((c) => c.id !== id));
       setTotal((n) => Math.max(0, n - 1));
     } catch {
       setError(t.historyDeleteError);
@@ -170,7 +170,7 @@ export default function History() {
       });
       setList((prev) =>
         prev.map((c) =>
-          c._id === renameData.id ? { ...c, title: renameData.title } : c,
+          c.id === renameData.id ? { ...c, title: renameData.title } : c,
         ),
       );
     } catch {
@@ -186,13 +186,13 @@ export default function History() {
     {
       label: t.historyRename,
       icon: <RenameIcon />,
-      onSelect: () => setRenameData({ id: c._id, title: c.title || "" }),
+      onSelect: () => setRenameData({ id: c.id, title: c.title || "" }),
     },
     {
       label: t.historyDelete,
       danger: true,
       icon: <TrashIcon />,
-      onSelect: () => setDeleteId(c._id),
+      onSelect: () => setDeleteId(c.id),
     },
   ];
 
@@ -367,10 +367,10 @@ export default function History() {
             }`}
           >
             {list.map((c) => (
-              <div key={c._id} className="conversation-card">
+              <div key={c.id} className="conversation-card">
                 <button
                   className="conversation-card__main"
-                  onClick={() => navigate(`/conversations/${c._id}`)}
+                  onClick={() => navigate(`/conversations/${c.id}`)}
                   aria-label={`${t.historyOpenConversation}: ${c.title || t.historyUntitled}`}
                 >
                   <div className="conversation-card__icon">
@@ -420,9 +420,9 @@ export default function History() {
                   const topicInfo = topicOption(c.topic);
                   return (
                     <tr
-                      key={c._id}
+                      key={c.id}
                       className="history__row"
-                      onClick={() => navigate(`/conversations/${c._id}`)}
+                      onClick={() => navigate(`/conversations/${c.id}`)}
                     >
                       <td className="history__cell-name">
                         <span className="history__row-title">

@@ -103,16 +103,13 @@ export default function Scan() {
     form.append("topic", topic);
     updateGlobalTargetLang(targetLang);
 
-    const res = await fetch(
-      `${api.defaults.baseURL}/conversations/scan-create`,
-      {
-        method: "POST",
-        body: form,
-      },
+    // Use axios so Bearer token is auto-attached by interceptor
+    const res = await api.post<{ id: string }>(
+      "/conversations/scan-create",
+      form,
+      { headers: { "Content-Type": "multipart/form-data" } },
     );
-
-    const data = await res.json();
-    return data.conversationId;
+    return res.data.id;
   }
 
   const onSubmit = async (e: React.FormEvent) => {

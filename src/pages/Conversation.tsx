@@ -134,7 +134,7 @@ export default function Conversation() {
       setLoading(false);
       setTimeout(() => {
         api.get(`/conversations/${id}`).then((res) => {
-          setTitle(res.data.title ?? t.convDefaultTitle);
+          setTitle(res.data.title || t.convDefaultTitle);
         });
       }, 500);
     }

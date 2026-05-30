@@ -108,7 +108,7 @@ export const UI_TEXT = {
         historyEmptyTitle: "Chưa có cuộc trò chuyện",
         historyEmptyDesc: "Bắt đầu bằng cách scan một tài liệu",
 
-        historyUntitled: "Cuộc trò chuyện chưa đặt tên",
+        historyUntitled: "Cuộc trò chuyện mới",
         historyOpenConversation: "Mở cuộc trò chuyện",
 
         historyRename: "Đổi tên",
@@ -148,7 +148,24 @@ export const UI_TEXT = {
         cancelBtn: "Hủy",
         delete: "Xóa",
         // ========== CONVERSATION ==========
-        convDefaultTitle: "Cuộc trò chuyện",
+        convDefaultTitle: "Cuộc trò chuyện mới",
+
+        // ========== ADMIN ==========
+        adminTitle: "Quản trị",
+        adminOpenLink: "Mở trang quản trị",
+        adminAiSection: "Cấu hình AI",
+        adminModelLabel: "Model AI",
+        adminModelDesc: "Model Gemini dùng để phân tích & trả lời",
+        adminModelFlash: "chất lượng cao",
+        adminModelLite: "rẻ & nhanh",
+        adminAiMockLabel: "Mock AI",
+        adminAiMockDesc: "Bật = trả lời giả lập (không gọi Gemini, không tốn quota)",
+        adminOcrMockLabel: "Mock OCR",
+        adminOcrMockDesc: "Bật = OCR giả lập (không gọi OCR.Space)",
+        adminSaving: "Đang lưu...",
+        adminSaved: "Đã lưu ✓",
+        adminLoadError: "Không tải được cấu hình",
+        adminSaveError: "Lưu thất bại",
 
         convBackToHistoryAria: "Quay về lịch sử",
         convBackToHistoryTitle: "Quay về danh sách trò chuyện",
@@ -306,7 +323,7 @@ export const UI_TEXT = {
         historyEmptyTitle: "No conversations yet",
         historyEmptyDesc: "Start by scanning a document",
 
-        historyUntitled: "Untitled conversation",
+        historyUntitled: "New conversation",
         historyOpenConversation: "Open conversation",
 
         historyRename: "Rename",
@@ -346,7 +363,24 @@ export const UI_TEXT = {
         cancelBtn: "Cancel",
         delete: "Delete",
         // ========== CONVERSATION ==========
-        convDefaultTitle: "Conversation",
+        convDefaultTitle: "New conversation",
+
+        // ========== ADMIN ==========
+        adminTitle: "Admin",
+        adminOpenLink: "Open admin panel",
+        adminAiSection: "AI configuration",
+        adminModelLabel: "AI model",
+        adminModelDesc: "Gemini model used to analyse & answer",
+        adminModelFlash: "higher quality",
+        adminModelLite: "cheaper & faster",
+        adminAiMockLabel: "Mock AI",
+        adminAiMockDesc: "On = canned responses (no Gemini call, no quota)",
+        adminOcrMockLabel: "Mock OCR",
+        adminOcrMockDesc: "On = canned OCR (no OCR.Space call)",
+        adminSaving: "Saving...",
+        adminSaved: "Saved ✓",
+        adminLoadError: "Failed to load settings",
+        adminSaveError: "Failed to save",
 
         convBackToHistoryAria: "Back to history",
         convBackToHistoryTitle: "Back to conversations",

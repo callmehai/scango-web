@@ -1,4 +1,6 @@
+import { Link } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
+import { useAuth } from "../hooks/useAuth";
 import { SETTINGS_LANGUAGES } from "../constants/settingsLanguages";
 import { LANGUAGE_MAP, type TargetLanguage } from "../constants/languages";
 import { UI_TEXT } from "../constants/uiText";
@@ -11,6 +13,7 @@ export default function Settings() {
     useSettings();
 
   const t = UI_TEXT[systemLang];
+  const { user } = useAuth();
 
   return (
     <div className="settings">
@@ -78,6 +81,33 @@ export default function Settings() {
             </div>
           </div>
         </section>
+
+        {/* Admin — only visible to admins */}
+        {user?.role === "admin" && (
+          <section className="settings__section">
+            <h2 className="settings__section-title">🛠️ {t.adminTitle}</h2>
+            <div className="settings__card">
+              <div className="settings__item">
+                <div className="settings__item-label">
+                  <label className="settings__label">{t.adminAiSection}</label>
+                  <p className="settings__description">{t.adminModelDesc}</p>
+                </div>
+                <div className="settings__item-control">
+                  <Link
+                    to="/admin"
+                    style={{
+                      color: "var(--color-primary, #6366f1)",
+                      fontWeight: 600,
+                      textDecoration: "none",
+                    }}
+                  >
+                    {t.adminOpenLink} →
+                  </Link>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Info */}
         <section className="settings__section">

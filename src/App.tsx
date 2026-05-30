@@ -6,9 +6,11 @@ import History from "./pages/History";
 import Settings from "./pages/Settings";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
+import AdminSettings from "./pages/AdminSettings";
 import HeaderControls from "./components/HeaderControls";
 import BackButton from "./components/BackButton";
 import ProtectedRoute from "./components/ProtectedRoute";
+import AdminRoute from "./components/AdminRoute";
 import { SettingsProvider } from "./hooks/useSettings";
 import { AuthProvider } from "./hooks/useAuth";
 import "./styles/index.css"; // Import global styles with theme
@@ -62,6 +64,14 @@ export default function App() {
                 <ProtectedRoute>
                   <Settings />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminSettings />
+                </AdminRoute>
               }
             />
           </Routes>

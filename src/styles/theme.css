@@ -1,15 +1,19 @@
 /* ============================================================================
-   THEME SYSTEM - CSS Variables for Light & Dark modes
-   
-   This file defines the color palette and applies it based on data-theme
-   attribute on the root element. All color values are centralized here
-   for easy maintenance and consistent theming across the app.
-   
-   Usage: Use var(--color-name) in all CSS files instead of hardcoded colors
-   ============================================================================ */
+   ScanGo THEME SYSTEM - CSS Variables / Design Tokens (Light & Dark)
 
-/* ============================================================================
-   ROOT ELEMENT - Initialize theme based on data-theme attribute
+   This file is the SINGLE SOURCE OF TRUTH for the design system.
+   It is organized in layers:
+
+     1. SCALE TOKENS  (theme-agnostic): spacing, radius, type, weight,
+        line-height, transition, z-index, container.
+     2. BRAND TOKENS  (standardized): primary indigo #6366f1,
+        secondary violet #8b5cf6, accent pink #ec4899 + gradients.
+     3. SEMANTIC TOKENS (per theme): surface / elevation / text / border /
+        status / focus / glass / shadow.
+     4. LEGACY ALIASES: every previously-shipped var name is preserved and
+        re-mapped onto the new tokens so un-refactored screens never break.
+
+   Usage: ALWAYS use var(--token) in CSS. Never hardcode hex for brand/spacing.
    ============================================================================ */
 
 :root {
@@ -18,53 +22,153 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
-  /* ... light mode variables ... */
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  /* ... dark mode variables ... */
 }
 
 /* ============================================================================
-   LIGHT THEME - Default, clean, professional colors
+   1. SCALE TOKENS  (theme-agnostic — same in light & dark)
+   ============================================================================ */
+
+:root {
+  /* --- Spacing scale (4px base) --- */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-7: 32px;
+  --space-8: 40px;
+  --space-9: 48px;
+  --space-10: 64px;
+
+  /* --- Radius scale --- */
+  --radius-xs: 6px;
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 20px;
+  --radius-2xl: 28px;
+  --radius-full: 9999px;
+
+  /* --- Font family --- */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+    'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans',
+    'Helvetica Neue', sans-serif;
+  --font-mono: 'SF Mono', ui-monospace, 'Cascadia Code', 'Fira Code', Consolas,
+    monospace;
+
+  /* --- Font-size scale (mobile-first, rem) --- */
+  --text-xs: 0.75rem;    /* 12px - captions, badges, helper text */
+  --text-sm: 0.875rem;   /* 14px - secondary body, labels, inputs */
+  --text-base: 1rem;     /* 16px - body default */
+  --text-lg: 1.125rem;   /* 18px - lead / emphasized body */
+  --text-xl: 1.25rem;    /* 20px - h4 / card title */
+  --text-2xl: 1.5rem;    /* 24px - h2 / section title */
+  --text-3xl: 2rem;      /* 32px - h1 / page hero */
+
+  /* --- Font weight --- */
+  --font-normal: 400;
+  --font-medium: 500;
+  --font-semibold: 600;
+  --font-bold: 700;
+
+  /* --- Line height --- */
+  --leading-tight: 1.2;   /* headings */
+  --leading-snug: 1.4;    /* dense UI text */
+  --leading-normal: 1.5;  /* body default */
+  --leading-relaxed: 1.6; /* long-form paragraphs */
+
+  /* --- Transitions (neutralized by reduced-motion at bottom) --- */
+  --transition-fast: 0.12s ease;
+  --transition-base: 0.2s ease;
+  --transition-slow: 0.35s ease;
+  --transition: var(--transition-base);            /* legacy single token */
+
+  /* --- Z-index layers --- */
+  --z-base: 1;
+  --z-header: 100;
+  --z-dropdown: 1000;
+  --z-modal: 2000;
+  --z-toast: 3000;
+
+  /* --- Container widths --- */
+  --container-sm: 640px;
+  --container-md: 768px;
+  --container-lg: 1024px;
+  --container-xl: 1200px;
+
+  /* --- Focus ring geometry (color set per theme) --- */
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 2px;
+
+  /* --- Legacy spacing aliases (older screens) --- */
+  --spacing-xs: var(--space-1);
+  --spacing-sm: var(--space-2);
+  --spacing-md: var(--space-4);
+  --spacing-lg: var(--space-6);
+  --spacing-xl: var(--space-7);
+}
+
+/* ============================================================================
+   2 + 3. LIGHT THEME - brand + semantic tokens
    ============================================================================ */
 
 :root,
 :root[data-theme="light"] {
-  /* Primary colors - Main brand colors */
-  --color-primary: #667eea;
-  --color-primary-dark: #764ba2;
-  --color-primary-light: #8b9ef5;
-  --color-primary-rgb: 102, 126, 234;
+  /* --- BRAND (standardized indigo / violet / pink) --- */
+  --color-primary: #6366f1;          /* indigo */
+  --color-primary-hover: #4f46e5;
+  --color-primary-active: #4338ca;
+  --color-primary-dark: #4338ca;     /* legacy name -> darker indigo */
+  --color-primary-light: #818cf8;
+  --color-primary-subtle: #eef2ff;   /* tint bg for chips/badges */
+  --color-primary-rgb: 99, 102, 241;
 
-  /* Secondary colors - Neutral grays */
+  --color-secondary: #8b5cf6;        /* violet */
+  --color-secondary-hover: #7c3aed;
+  --color-secondary-light: #a78bfa;
+
+  --color-accent: #ec4899;           /* pink */
+  --color-accent-hover: #db2777;
+
+  /* --- Text --- */
   --color-text: #1f2937;
   --color-text-secondary: #6b7280;
-  --color-text-muted: #9ca3af;
+  --color-text-tertiary: #9ca3af;
+  --color-text-muted: #9ca3af;       /* legacy alias of tertiary */
   --color-text-inverse: #ffffff;
+  --color-text-on-primary: #ffffff;
 
-  /* Background colors */
+  /* --- Background --- */
   --color-bg: #ffffff;
   --color-bg-secondary: #f8f9fa;
   --color-bg-tertiary: #f3f4f6;
   --color-bg-hover: #f0f1f7;
+  --color-bg-secondary-rgb: 248, 249, 250;
 
-  /* Page background - used by all pages */
+  /* --- Page background (legacy, used by pages) --- */
   --page-bg: #ffffff;
   --page-bg-gradient: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
 
-  /* Surface colors - Cards, containers */
+  /* --- Surface / Elevation --- */
   --color-surface: #ffffff;
   --color-surface-hover: #f8f9fa;
-  --color-surface-overlay: rgba(255, 255, 255, 0.95);
+  --color-surface-raised: #ffffff;   /* cards/popovers above tinted bg */
+  --color-surface-sunken: #f3f4f6;   /* wells, inset areas */
+  --color-surface-overlay: rgba(255, 255, 255, 0.95); /* legacy */
+  --color-overlay: rgba(17, 24, 39, 0.5);             /* modal scrim */
 
-  /* Border and divider colors */
+  /* --- Border --- */
   --color-border: #e5e7eb;
   --color-border-light: #f3f4f6;
-  --color-divider: #d1d5db;
+  --color-border-strong: #d1d5db;
+  --color-divider: #d1d5db;          /* legacy alias of border-strong */
 
-  /* State colors */
+  /* --- Status --- */
   --color-success: #10b981;
   --color-success-bg: rgba(16, 185, 129, 0.1);
   --color-warning: #f59e0b;
@@ -74,63 +178,88 @@
   --color-info: #3b82f6;
   --color-info-bg: rgba(59, 130, 246, 0.1);
 
-  /* Focus and interaction colors */
-  --color-focus-ring: rgba(102, 126, 234, 0.1);
-  --color-focus-border: #667eea;
+  /* --- Focus ring --- */
+  --focus-ring-color: var(--color-primary);
+  --focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.4);
+  --color-focus-ring: rgba(99, 102, 241, 0.1);  /* legacy box-shadow tint */
+  --color-focus-border: #6366f1;                /* legacy focus border */
 
-  /* Shadows */
+  /* --- Shadows (elevation) --- */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.04);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
   --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.1);
   --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.15);
 
-  /* Glassmorphism */
+  /* --- Glassmorphism --- */
   --glass-bg: rgba(255, 255, 255, 0.95);
   --glass-blur: blur(10px);
   --glass-border: rgba(255, 255, 255, 0.2);
 
-  /* Gradient (main brand gradient) */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-primary-hover: linear-gradient(135deg, #7a8ff5 0%, #8559b3 100%);
+  /* --- Brand gradients (CANONICAL) --- */
+  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --gradient-brand: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --gradient-secondary: linear-gradient(135deg, #8b5cf6, #ec4899);
+  --gradient-accent: linear-gradient(135deg, #8b5cf6, #ec4899);
+  --gradient-primary-hover: linear-gradient(135deg, #4f46e5, #7c3aed); /* legacy */
 }
 
 /* ============================================================================
-   DARK THEME - Professional dark mode with proper contrast
+   2 + 3. DARK THEME - brand + semantic tokens
+   (scale tokens inherit from :root)
    ============================================================================ */
 
 :root[data-theme="dark"] {
-  /* Primary colors - Adjusted for dark background */
-  --color-primary: #a8b8f8;
-  --color-primary-dark: #c9d5ff;
-  --color-primary-light: #8b9ef5;
-  --color-primary-rgb: 168, 184, 248;
+  /* --- BRAND (lifted for contrast on dark surfaces) --- */
+  --color-primary: #818cf8;
+  --color-primary-hover: #6366f1;
+  --color-primary-active: #4f46e5;
+  --color-primary-dark: #6366f1;     /* legacy name */
+  --color-primary-light: #a5b4fc;
+  --color-primary-subtle: #1e1b4b;
+  --color-primary-rgb: 129, 140, 248;
 
-  /* Secondary colors - Light grays for dark background */
+  --color-secondary: #a78bfa;
+  --color-secondary-hover: #8b5cf6;
+  --color-secondary-light: #c4b5fd;
+
+  --color-accent: #f472b6;
+  --color-accent-hover: #ec4899;
+
+  /* --- Text --- */
   --color-text: #f3f4f6;
   --color-text-secondary: #d1d5db;
-  --color-text-muted: #9ca3af;
+  --color-text-tertiary: #9ca3af;
+  --color-text-muted: #9ca3af;       /* legacy alias */
   --color-text-inverse: #1f2937;
+  --color-text-on-primary: #0f172a;
 
-  /* Background colors */
+  /* --- Background --- */
   --color-bg: #0f0f0f;
   --color-bg-secondary: #1a1a1a;
   --color-bg-tertiary: #262626;
   --color-bg-hover: #2d2d2d;
+  --color-bg-secondary-rgb: 26, 26, 26;
 
-  /* Page background - used by all pages */
+  /* --- Page background (legacy) --- */
   --page-bg: #0f0f0f;
   --page-bg-gradient: linear-gradient(135deg, #0f0f0f 0%, #1a1a1a 100%);
 
-  /* Surface colors - Cards, containers */
+  /* --- Surface / Elevation --- */
   --color-surface: #1a1a1a;
   --color-surface-hover: #262626;
-  --color-surface-overlay: rgba(30, 30, 30, 0.9);
+  --color-surface-raised: #242424;
+  --color-surface-sunken: #0f0f0f;
+  --color-surface-overlay: rgba(30, 30, 30, 0.9); /* legacy */
+  --color-overlay: rgba(0, 0, 0, 0.6);            /* modal scrim */
 
-  /* Border and divider colors */
+  /* --- Border --- */
   --color-border: #404040;
   --color-border-light: #2d2d2d;
-  --color-divider: #505050;
+  --color-border-strong: #505050;
+  --color-divider: #505050;          /* legacy alias */
 
-  /* State colors - Adjusted for dark background */
+  /* --- Status --- */
   --color-success: #34d399;
   --color-success-bg: rgba(52, 211, 153, 0.15);
   --color-warning: #fbbf24;
@@ -140,59 +269,63 @@
   --color-info: #60a5fa;
   --color-info-bg: rgba(96, 165, 250, 0.15);
 
-  /* Focus and interaction colors */
-  --color-focus-ring: rgba(168, 184, 248, 0.1);
-  --color-focus-border: #a8b8f8;
+  /* --- Focus ring --- */
+  --focus-ring-color: var(--color-primary);
+  --focus-ring: 0 0 0 3px rgba(var(--color-primary-rgb), 0.5);
+  --color-focus-ring: rgba(129, 140, 248, 0.15); /* legacy */
+  --color-focus-border: #818cf8;                 /* legacy */
 
-  /* Shadows - Darker for dark theme */
+  /* --- Shadows (deeper on dark) --- */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
-  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.4);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.5);
+  --shadow-xl: 0 20px 40px rgba(0, 0, 0, 0.6);
 
-  /* Glassmorphism */
+  /* --- Glassmorphism --- */
   --glass-bg: rgba(30, 30, 30, 0.9);
   --glass-blur: blur(10px);
-  --glass-border: rgba(168, 184, 248, 0.1);
+  --glass-border: rgba(129, 140, 248, 0.1);
 
-  /* Gradient (adjusted for dark background) */
-  --gradient-primary: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  --gradient-primary-hover: linear-gradient(135deg, #7a8ff5 0%, #8559b3 100%);
+  /* --- Brand gradients stay on canonical brand hues --- */
+  --gradient-primary: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --gradient-brand: linear-gradient(135deg, #6366f1, #8b5cf6);
+  --gradient-secondary: linear-gradient(135deg, #8b5cf6, #ec4899);
+  --gradient-accent: linear-gradient(135deg, #8b5cf6, #ec4899);
+  --gradient-primary-hover: linear-gradient(135deg, #4f46e5, #7c3aed); /* legacy */
 }
 
 /* ============================================================================
    SMOOTH THEME TRANSITIONS
-   Enable smooth color transitions when switching themes
    ============================================================================ */
 
 html {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color var(--transition-slow), color var(--transition-slow);
 }
 
 body {
-  transition: background-color 0.3s ease, color 0.3s ease;
+  transition: background-color var(--transition-slow), color var(--transition-slow);
 }
 
-/* Transition for most elements */
 button,
 input,
 select,
 textarea {
-  transition: background-color 0.3s ease, color 0.3s ease,
-    border-color 0.3s ease;
+  transition: background-color var(--transition-slow), color var(--transition-slow),
+    border-color var(--transition-slow);
 }
 
 /* ============================================================================
-   BODY DEFAULTS - Apply theme to body element
+   BODY DEFAULTS
    ============================================================================ */
 
 body {
   background-color: var(--page-bg);
   color: var(--color-text);
-  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
 /* ============================================================================
-   COMMON ELEMENT COLORS - Apply theme to all elements
+   COMMON ELEMENT COLORS
    ============================================================================ */
 
 a {
@@ -200,10 +333,9 @@ a {
 }
 
 a:hover {
-  color: var(--color-primary-dark);
+  color: var(--color-primary-hover);
 }
 
-/* Input elements */
 input,
 select,
 textarea {
@@ -219,7 +351,6 @@ textarea:focus {
   box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
-/* Code blocks */
 code,
 pre {
   background-color: var(--color-bg-tertiary);
@@ -231,27 +362,16 @@ pre {
    UTILITY CLASSES FOR THEME-AWARE COMPONENTS
    ============================================================================ */
 
-/* Glass background effect */
 .glass-bg {
   background: var(--glass-bg) !important;
   backdrop-filter: var(--glass-blur);
   border: 1px solid var(--glass-border);
 }
 
-/* Shadow utilities */
-.shadow-sm {
-  box-shadow: var(--shadow-sm);
-}
+.shadow-sm { box-shadow: var(--shadow-sm); }
+.shadow-md { box-shadow: var(--shadow-md); }
+.shadow-lg { box-shadow: var(--shadow-lg); }
 
-.shadow-md {
-  box-shadow: var(--shadow-md);
-}
-
-.shadow-lg {
-  box-shadow: var(--shadow-lg);
-}
-
-/* Gradient utilities */
 .gradient-primary {
   background: var(--gradient-primary);
   background-clip: text;
@@ -260,7 +380,7 @@ pre {
 }
 
 /* ============================================================================
-   ACCESSIBILITY - Ensure proper contrast in both themes
+   ACCESSIBILITY - high contrast
    ============================================================================ */
 
 @media (prefers-contrast: more) {
@@ -277,8 +397,18 @@ pre {
   }
 }
 
-/* Respect reduced motion */
+/* ============================================================================
+   REDUCED MOTION - neutralize transition tokens + element transitions
+   ============================================================================ */
+
 @media (prefers-reduced-motion: reduce) {
+  :root {
+    --transition-fast: 0.01ms;
+    --transition-base: 0.01ms;
+    --transition-slow: 0.01ms;
+    --transition: 0.01ms;
+  }
+
   html,
   body,
   button,
@@ -290,12 +420,13 @@ pre {
 }
 
 /* ============================================================================
-   PRINT STYLES - Use light theme for printing
+   PRINT - force light surfaces
    ============================================================================ */
 
 @media print {
   :root {
     --color-bg: #ffffff;
+    --page-bg: #ffffff;
     --color-text: #000000;
   }
 }

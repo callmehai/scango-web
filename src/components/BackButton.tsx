@@ -4,9 +4,8 @@ import { UI_TEXT } from "../constants/uiText";
 import "../styles/BackButton.css";
 
 /**
- * Fixed top-left navigation button.
- * Auto-hides on Home ("/"). Conversation pages go back to /history; everything
- * else goes back to /. Mount once in App — no per-page wiring needed.
+ * Fixed top-left "back" button — goes to the PREVIOUS page (browser history).
+ * Auto-hides on Home + public auth pages. Mount once in App.
  */
 export default function BackButton() {
   const navigate = useNavigate();
@@ -18,14 +17,12 @@ export default function BackButton() {
   const hideOn = ["/", "/login", "/register"];
   if (hideOn.includes(location.pathname)) return null;
 
-  const to = location.pathname.startsWith("/conversations/") ? "/history" : "/";
-
   return (
     <button
       className="back-button"
-      onClick={() => navigate(to)}
-      aria-label={t.backHome}
-      title={t.backHome}
+      onClick={() => navigate(-1)}
+      aria-label={t.back}
+      title={t.back}
       type="button"
     >
       <svg

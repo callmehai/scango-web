@@ -1,12 +1,27 @@
 import { useNavigate, useParams } from "react-router-dom";
 import { useEffect, useRef, useState } from "react";
+import type { KeyboardEvent } from "react";
 import api, { tokenStore } from "../api/axios";
 import type { Message } from "../types/message";
 import { UI_TEXT } from "../constants/uiText";
 import { useSettings } from "../hooks/useSettings";
+import { useAuth } from "../hooks/useAuth";
+import {
+  Button,
+  Textarea,
+  Modal,
+  Field,
+  Input,
+  ConfirmDialog,
+  Spinner,
+  EmptyState,
+  useToast,
+} from "../components/ui";
 import "../styles/Conversation.css";
 import ReactMarkdown from "react-markdown";
-import ActionMenu from "../components/ActionMenu";
+
+// Keep in sync with backend AskRequest: [StringLength(4000, MinimumLength = 1)]
+const MAX_QUESTION_CHARS = 4000;
 
 async function consumeSseStream(
   reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -51,7 +66,12 @@ export default function Conversation() {
   const navigate = useNavigate();
 
   const { systemLang } = useSettings();
+  const { user } = useAuth();
   const t = UI_TEXT[systemLang];
+  const toast = useToast();
+
+  // Initial for the user avatar (first letter of name, else email).
+  const userInitial = (user?.name || user?.email || "?").trim()[0]?.toUpperCase() ?? "?";
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [hasImage, setHasImage] = useState(false);
@@ -60,33 +80,77 @@ export default function Conversation() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quotaReached, setQuotaReached] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(true);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const stopRef = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
-  const inputRef = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   const [previewImage, setPreviewImage] = useState<string | null>(null);
   const [showDelete, setShowDelete] = useState(false);
   const [renameData, setRenameData] = useState<{ title: string } | null>(null);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [composeOpen, setComposeOpen] = useState(false);
+
+  // Clamp pasted/typed input to the backend limit.
+  const setInputClamped = (val: string) =>
+    setInput(val.slice(0, MAX_QUESTION_CHARS));
+
+  const charCountLabel = t.convCharCount
+    .replace("{count}", String(input.length))
+    .replace("{max}", String(MAX_QUESTION_CHARS));
+  const charLimitReached = input.length >= MAX_QUESTION_CHARS;
 
   // Cleanup on unmount — abort any in-flight stream
   useEffect(() => {
     return () => {
       stopRef.current = true;
       abortRef.current?.abort();
+      if (rafRef.current != null) cancelAnimationFrame(rafRef.current);
     };
   }, []);
+
+  // Close the action menu on outside click
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onClickOutside = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
+  }, [menuOpen]);
 
   // Append SSE chunk straight to the assistant message. No fake typing — the
   // network already delivers tokens at a natural pace; re-buffering through a
   // worker introduced visible "stop/start" jitter.
-  const appendAssistantText = (text: string) => {
+  // Buffer incoming SSE chunks and flush them to React state once per animation
+  // frame. Committing on every tiny token caused many renders per frame → the
+  // "jerky" feel. Coalescing to ~60fps makes the stream smooth.
+  const pendingTextRef = useRef("");
+  const rafRef = useRef<number | null>(null);
+
+  const flushPending = () => {
+    rafRef.current = null;
+    const chunk = pendingTextRef.current;
+    if (!chunk) return;
+    pendingTextRef.current = "";
     setMessages((prev) => {
       const last = prev[prev.length - 1];
       if (!last || last.role !== "assistant") return prev;
-      return [...prev.slice(0, -1), { ...last, content: last.content + text }];
+      return [...prev.slice(0, -1), { ...last, content: last.content + chunk }];
     });
+  };
+
+  const appendAssistantText = (text: string) => {
+    pendingTextRef.current += text;
+    if (rafRef.current == null) {
+      rafRef.current = requestAnimationFrame(flushPending);
+    }
   };
 
   const startScanStream = async () => {
@@ -118,6 +182,12 @@ export default function Conversation() {
         },
       );
 
+      if (res.status === 429) {
+        setQuotaReached(true);
+        setError(t.convQuotaError);
+        setMessages((m) => m.slice(0, -1));
+        return;
+      }
       if (!res.ok || !res.body) throw new Error("Network error");
 
       await consumeSseStream(
@@ -143,31 +213,40 @@ export default function Conversation() {
   useEffect(() => {
     if (!id) return;
 
-    api.get(`/conversations/${id}`).then((res) => {
-      const msgs = (res.data.messages ?? []) as Message[];
+    setInitialLoading(true);
+    api
+      .get(`/conversations/${id}`)
+      .then((res) => {
+        const msgs = (res.data.messages ?? []) as Message[];
 
-      setMessages(msgs);
-      setHasImage(Boolean(res.data.hasImage));
-      setTitle(res.data.title || t.convDefaultTitle);
+        setMessages(msgs);
+        setHasImage(Boolean(res.data.hasImage));
+        setTitle(res.data.title || t.convDefaultTitle);
 
-      // Fetch image via auth'd request → blob URL so <img> tag can use it
-      if (res.data.hasImage) {
-        api
-          .get(`/conversations/${id}/image`, { responseType: "blob" })
-          .then((imgRes) => {
-            const url = URL.createObjectURL(imgRes.data as Blob);
-            setImageBlobUrl(url);
-          })
-          .catch(() => {
-            /* image missing — skip */
-          });
-      }
+        // Fetch image via auth'd request → blob URL so <img> tag can use it
+        if (res.data.hasImage) {
+          api
+            .get(`/conversations/${id}/image`, { responseType: "blob" })
+            .then((imgRes) => {
+              const url = URL.createObjectURL(imgRes.data as Blob);
+              setImageBlobUrl(url);
+            })
+            .catch(() => {
+              /* image missing — skip */
+            });
+        }
 
-      const hasAssistantInDB = msgs.some((m) => m.role === "assistant");
-      if (res.data.hasImage && !hasAssistantInDB) {
-        startScanStream();
-      }
-    });
+        const hasAssistantInDB = msgs.some((m) => m.role === "assistant");
+        if (res.data.hasImage && !hasAssistantInDB) {
+          startScanStream();
+        }
+      })
+      .catch(() => {
+        setError(t.convStreamError);
+      })
+      .finally(() => {
+        setInitialLoading(false);
+      });
 
     // cleanup blob URL on unmount / id change
     return () => {
@@ -176,6 +255,7 @@ export default function Conversation() {
         return null;
       });
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
   const sendStream = async () => {
@@ -187,6 +267,7 @@ export default function Conversation() {
     abortRef.current = controller;
     setLoading(true);
     setError(null);
+    setQuotaReached(false);
 
     const userMsg: Message = {
       role: "user",
@@ -219,6 +300,13 @@ export default function Conversation() {
         },
       );
 
+      if (res.status === 429) {
+        setQuotaReached(true);
+        setError(t.convQuotaError);
+        // drop the empty assistant placeholder bubble
+        setMessages((m) => m.slice(0, -1));
+        return;
+      }
       if (!res.ok || !res.body) throw new Error("Network error");
 
       await consumeSseStream(
@@ -243,9 +331,57 @@ export default function Conversation() {
     }
   };
 
+  const handleStop = () => {
+    stopRef.current = true;
+    abortRef.current?.abort();
+    // flush any buffered text so the partial answer isn't lost
+    if (rafRef.current != null) {
+      cancelAnimationFrame(rafRef.current);
+      flushPending();
+    }
+    setLoading(false);
+  };
+
+  const handleKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      sendStream();
+    }
+  };
+
+  // Auto-scroll to the bottom as new content streams in — but ONLY while the
+  // user is following along at the bottom. The moment they scroll up to read,
+  // we stop forcing scroll so they can move freely; we resume only after they
+  // scroll back down to the bottom themselves.
+  const stickToBottomRef = useRef(true);
+  const programmaticScrollRef = useRef(false);
+
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [messages]);
+    const onScroll = () => {
+      // Ignore the scroll events we trigger ourselves.
+      if (programmaticScrollRef.current) {
+        programmaticScrollRef.current = false;
+        return;
+      }
+      const distanceFromBottom =
+        document.documentElement.scrollHeight -
+        (window.scrollY + window.innerHeight);
+      // User is "following" only if essentially pinned to the bottom.
+      stickToBottomRef.current = distanceFromBottom <= 80;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (!stickToBottomRef.current) return;
+    programmaticScrollRef.current = true;
+    // jump instantly during streaming (no animation pile-up); smooth otherwise
+    window.scrollTo({
+      top: document.documentElement.scrollHeight,
+      behavior: loading ? "auto" : "smooth",
+    });
+  }, [messages, loading]);
 
   const visibleMessages = messages.filter((m) => m.role !== "system");
 
@@ -258,339 +394,420 @@ export default function Conversation() {
       });
       setTitle(renameData.title);
       setRenameData(null);
+      toast.success(t.convRenameSuccess);
     } catch {
-      setError(t.convRenameError);
+      toast.error(t.convRenameError);
     }
   };
 
   const handleDelete = async () => {
-    try {
-      await api.delete(`/conversations/${id}`);
-      navigate("/history");
-    } catch {
-      setError(t.convDeleteError);
-    }
+    // Throws on failure so ConfirmDialog keeps its loading/locked state and
+    // the dialog isn't dismissed; toast surfaces the error.
+    await api.delete(`/conversations/${id}`);
+    toast.success(t.convDeleteSuccess);
+    navigate("/history");
   };
 
-  return (
-    <div className="conversation">
-      {/* Header — back button rendered globally via <BackButton /> in App.tsx */}
-      <header className="conversation__header">
-        <div className="conversation__title-section">
-          <h1 className="conversation__title">{title}</h1>
-        </div>
+  const formatTime = (iso: string) =>
+    new Date(iso).toLocaleTimeString(systemLang === "vi" ? "vi-VN" : "en-US", {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
-        <div className="conversation__header-actions">
-          <ActionMenu
-            ariaLabel={t.convActionRename}
-            items={[
-              {
-                label: t.convActionRename,
-                icon: (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-                  </svg>
-                ),
-                onSelect: () => setRenameData({ title }),
-              },
-              {
-                label: t.convActionDelete,
-                danger: true,
-                icon: (
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    <line x1="10" y1="11" x2="10" y2="17" />
-                    <line x1="14" y1="11" x2="14" y2="17" />
-                  </svg>
-                ),
-                onSelect: () => setShowDelete(true),
-              },
-            ]}
-          />
+  // The OCR/scan prompt makes Gemini emit a leading "TITLE: ..." line (used to
+  // name the conversation) before the body. Strip it so it never shows in the
+  // chat bubble — the title already lives in the top bar.
+  const stripTitleLine = (text: string) =>
+    text.replace(/^\s*TITLE:.*(?:\r?\n)+/i, "");
+
+  // Whether the last assistant message is the one currently being streamed.
+  const lastIndex = visibleMessages.length - 1;
+  const isThreadEmpty =
+    !initialLoading && visibleMessages.length === 0 && !hasImage && !loading;
+
+  return (
+    <div className="conversation-page">
+      {/* In-page top bar: dynamic conversation title + action menu */}
+      <div className="conversation-topbar">
+        <h2 className="conversation-title" title={title}>
+          {title}
+        </h2>
+        <div className="conversation-actions" ref={menuRef}>
+          <button
+            type="button"
+            className="conversation-menu-btn"
+            onClick={() => setMenuOpen((o) => !o)}
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            aria-label={t.convActionRename}
+          >
+            <svg
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="currentColor"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="5" r="2" />
+              <circle cx="12" cy="12" r="2" />
+              <circle cx="12" cy="19" r="2" />
+            </svg>
+          </button>
+          {menuOpen && (
+            <div className="conversation-menu" role="menu">
+              <button
+                type="button"
+                role="menuitem"
+                className="conversation-menu__item"
+                onClick={() => {
+                  setRenameData({ title });
+                  setMenuOpen(false);
+                }}
+              >
+                {t.convActionRename}
+              </button>
+              <button
+                type="button"
+                role="menuitem"
+                className="conversation-menu__item conversation-menu__item--danger"
+                onClick={() => {
+                  setShowDelete(true);
+                  setMenuOpen(false);
+                }}
+              >
+                {t.convActionDelete}
+              </button>
+            </div>
+          )}
         </div>
-      </header>
+      </div>
 
       {/* Messages */}
-      <main
-        className="conversation__body"
+      <div
+        className="conversation-messages"
         role="log"
-        aria-label="Chat messages"
+        aria-label={t.convInputAria}
+        aria-live="polite"
       >
-        {hasImage && imageBlobUrl && (
-          <article className="conversation__message conversation__message--image">
-            <div className="conversation__bubble">
-              <img
-                src={imageBlobUrl}
-                alt={t.convImageAlt}
-                className="conversation__image"
-                onClick={() => setPreviewImage(imageBlobUrl)}
-                style={{ cursor: "pointer" }}
-              />
-            </div>
-          </article>
-        )}
-
-        {visibleMessages.length === 0 ? (
-          <div className="conversation__empty">
-            <p>{t.convEmptyText}</p>
+        {initialLoading ? (
+          <div className="conversation-center">
+            <Spinner size="lg" label={t.historyLoading} />
+          </div>
+        ) : isThreadEmpty ? (
+          <div className="conversation-center">
+            <EmptyState
+              icon="💬"
+              title={t.convEmptyTitle}
+              description={t.convEmptyText}
+            />
           </div>
         ) : (
-          visibleMessages.map((m, idx) => {
-            const isLast = idx === visibleMessages.length - 1;
+          <div className="conversation-thread">
+            {hasImage && imageBlobUrl && (
+              <div className="conversation-row conversation-row--assistant">
+                <div className="conversation-bubble conversation-bubble--image">
+                  <button
+                    type="button"
+                    className="conversation-image-btn"
+                    onClick={() => setPreviewImage(imageBlobUrl)}
+                    aria-label={t.convImagePreviewAlt}
+                  >
+                    <img
+                      src={imageBlobUrl}
+                      alt={t.convImageAlt}
+                      className="conversation-bubble__image"
+                      loading="lazy"
+                    />
+                  </button>
+                </div>
+              </div>
+            )}
 
-            return (
-              <article
-                key={idx}
-                className={`conversation__message conversation__message--${m.role} ${
-                  loading && isLast && m.role === "assistant"
-                    ? "generating"
-                    : ""
-                }`}
-              >
-                <div className="conversation__bubble">
-                  {m.role === "assistant" && loading && m.content === "" ? (
-                    <div className="conversation__typing">
-                      <span></span>
-                      <span></span>
-                      <span></span>
-                    </div>
-                  ) : (
-                    <div className="conversation__text">
-                      <ReactMarkdown>{m.content}</ReactMarkdown>
-                    </div>
-                  )}
+            {visibleMessages.map((m, idx) => {
+              const isLast = idx === lastIndex;
+              const isStreamingBubble =
+                loading && isLast && m.role === "assistant";
+              const isTypingBubble = isStreamingBubble && m.content === "";
 
-                  {m.createdAt && (
-                    <time className="conversation__timestamp">
-                      {new Date(m.createdAt).toLocaleTimeString(
-                        systemLang === "vi" ? "vi-VN" : "en-US",
-                        {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        },
+              return (
+                <div
+                  key={idx}
+                  className={`conversation-row conversation-row--${m.role}`}
+                >
+                  <div className="conversation-line">
+                    <div
+                      className={`conversation-avatar conversation-avatar--${m.role}`}
+                      aria-hidden="true"
+                    >
+                      {m.role === "assistant" ? (
+                        <img
+                          src="/assets/ScanGoLogo.png"
+                          alt=""
+                          className="conversation-avatar__logo"
+                        />
+                      ) : (
+                        userInitial
                       )}
-                    </time>
+                    </div>
+
+                    <div
+                      className={`conversation-bubble conversation-bubble--${m.role}${
+                        isStreamingBubble && m.content !== ""
+                          ? " conversation-bubble--streaming"
+                          : ""
+                      }`}
+                    >
+                      {isTypingBubble ? (
+                        <div
+                          className="conversation-typing"
+                          role="status"
+                          aria-label={t.convInputAria}
+                        >
+                          <span />
+                          <span />
+                          <span />
+                        </div>
+                      ) : m.role === "assistant" ? (
+                        <div className="conversation-bubble__md">
+                          <ReactMarkdown>
+                            {stripTitleLine(m.content)}
+                          </ReactMarkdown>
+                          {isStreamingBubble && m.content !== "" && (
+                            <span
+                              className="conversation-caret"
+                              aria-hidden="true"
+                            />
+                          )}
+                        </div>
+                      ) : (
+                        <div className="conversation-bubble__text">
+                          {m.content}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  {m.createdAt && !isTypingBubble && (
+                    <div className="conversation-row__time">
+                      {formatTime(m.createdAt)}
+                    </div>
                   )}
                 </div>
-              </article>
-            );
-          })
+              );
+            })}
+          </div>
         )}
 
         <div ref={bottomRef} aria-hidden="true" />
-      </main>
+      </div>
 
-      {/* Image preview modal */}
-      {previewImage && (
-        <div className="image-modal" onClick={() => setPreviewImage(null)}>
-          <img src={previewImage} alt={t.convImagePreviewAlt} />
-        </div>
-      )}
-
-      {/* Error */}
-      {error && (
-        <div className="conversation__error" role="alert">
-          <svg
-            width="16"
-            height="16"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            style={{ flexShrink: 0 }}
-          >
-            <circle cx="12" cy="12" r="10" />
-            <line x1="12" y1="8" x2="12" y2="12" />
-            <line x1="12" y1="16" x2="12.01" y2="16" />
-          </svg>
-          <span>{error}</span>
-        </div>
-      )}
-
-      {/* Input */}
-      <footer className="conversation__input-section">
-        <form
-          className="conversation__input-form"
-          onSubmit={(e) => {
-            e.preventDefault();
-            sendStream();
-          }}
-        >
-          <input
-            ref={inputRef}
-            className="conversation__input"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder={t.convInputPlaceholder}
-            disabled={loading}
-            aria-label={t.convInputAria}
-          />
-
-          <button
-            className={`conversation__send-btn ${
-              loading ? "conversation__send-btn--loading" : ""
+      {/* Composer (sticky) */}
+      <div className="conversation-composer">
+        {error && (
+          <div
+            className={`conversation-banner${
+              quotaReached
+                ? " conversation-banner--quota"
+                : " conversation-banner--error"
             }`}
-            disabled={!input.trim() && !loading}
-            onClick={() => {
-              if (loading) {
-                stopRef.current = true;
-                abortRef.current?.abort();
-                setLoading(false);
-              } else {
-                sendStream();
-              }
-            }}
-            type="button"
-            aria-label={loading ? t.convStopAria : t.convSendAria}
+            role="alert"
           >
-            {loading ? (
-              <>
-                <span className="conversation__stop-icon">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <rect x="6" y="6" width="12" height="12" rx="2" />
-                  </svg>
-                </span>
-                <span className="conversation__stop-text">
-                  {t.convBtnStopText}
-                </span>
-              </>
-            ) : (
-              <>
-                <span className="conversation__send-icon">
-                  <svg
-                    width="16"
-                    height="16"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                  </svg>
-                </span>
-                <span className="conversation__send-text">
-                  {t.convBtnSendText}
-                </span>
-              </>
-            )}
-          </button>
-        </form>
-      </footer>
+            <span className="conversation-banner__icon" aria-hidden="true">
+              {quotaReached ? "⚡" : "⚠️"}
+            </span>
+            <span className="conversation-banner__text">{error}</span>
+          </div>
+        )}
 
-      {/* Rename modal */}
-      {renameData && (
-        <div className="modal-overlay" onClick={() => setRenameData(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title">
+        <div className="conversation-input-row">
+          <div className="conversation-input-wrap">
+            <Textarea
+              ref={inputRef}
+              className="conversation-textarea"
+              value={input}
+              onChange={(e) => setInputClamped(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={t.convInputPlaceholder}
+              aria-label={t.convInputAria}
+              maxLength={MAX_QUESTION_CHARS}
+              rows={2}
+              disabled={loading}
+            />
+            <button
+              type="button"
+              className="conversation-expand-btn"
+              onClick={() => setComposeOpen(true)}
+              aria-label={t.convExpandAria}
+              title={t.convExpandAria}
+              disabled={loading}
+            >
               <svg
-                width="20"
-                height="20"
+                width="16"
+                height="16"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
                 strokeLinecap="round"
                 strokeLinejoin="round"
+                aria-hidden="true"
               >
-                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-                <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+                <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
               </svg>
-              <span>{t.convRenameTitle}</span>
-            </h3>
+            </button>
+          </div>
+          {loading ? (
+            <Button
+              type="button"
+              variant="danger"
+              className="conversation-action-btn"
+              onClick={handleStop}
+              aria-label={t.convStopAria}
+            >
+              {t.convBtnStopText}
+            </Button>
+          ) : (
+            <Button
+              type="button"
+              className="conversation-action-btn"
+              onClick={sendStream}
+              disabled={!input.trim()}
+              aria-label={t.convSendAria}
+            >
+              {t.convBtnSendText}
+            </Button>
+          )}
+        </div>
 
-            <input
-              className="modal-input"
-              value={renameData.title}
+        <div
+          className={`conversation-charcount${
+            charLimitReached ? " conversation-charcount--max" : ""
+          }`}
+          aria-live="polite"
+        >
+          {charLimitReached ? t.convCharLimitReached : charCountLabel}
+        </div>
+      </div>
+
+      {/* Expanded compose modal — roomy text entry */}
+      <Modal
+        open={composeOpen}
+        onClose={() => setComposeOpen(false)}
+        title={t.convComposeTitle}
+        closeLabel={t.cancelBtn}
+        size="lg"
+        footer={
+          <>
+            <span
+              className={`conversation-charcount${
+                charLimitReached ? " conversation-charcount--max" : ""
+              }`}
+            >
+              {charLimitReached ? t.convCharLimitReached : charCountLabel}
+            </span>
+            <Button
+              variant="subtle"
+              onClick={() => setComposeOpen(false)}
+            >
+              {t.cancelBtn}
+            </Button>
+            <Button
+              onClick={() => {
+                setComposeOpen(false);
+                sendStream();
+              }}
+              disabled={!input.trim() || loading}
+            >
+              {t.convBtnSendText}
+            </Button>
+          </>
+        }
+      >
+        <Textarea
+          className="conversation-compose-textarea"
+          value={input}
+          onChange={(e) => setInputClamped(e.target.value)}
+          placeholder={t.convInputPlaceholder}
+          aria-label={t.convInputAria}
+          maxLength={MAX_QUESTION_CHARS}
+          rows={10}
+          autoFocus
+        />
+      </Modal>
+
+      {/* Image preview modal */}
+      <Modal
+        open={Boolean(previewImage)}
+        onClose={() => setPreviewImage(null)}
+        size="lg"
+        closeLabel={t.cancelBtn}
+        title={t.convImagePreviewAlt}
+      >
+        {previewImage && (
+          <img
+            src={previewImage}
+            alt={t.convImagePreviewAlt}
+            className="conversation-preview-img"
+          />
+        )}
+      </Modal>
+
+      {/* Rename modal */}
+      <Modal
+        open={Boolean(renameData)}
+        onClose={() => setRenameData(null)}
+        title={t.convRenameTitle}
+        closeLabel={t.cancelBtn}
+        footer={
+          <>
+            <Button variant="subtle" onClick={() => setRenameData(null)}>
+              {t.cancelBtn}
+            </Button>
+            <Button
+              onClick={handleRename}
+              disabled={!renameData?.title.trim()}
+            >
+              {t.save}
+            </Button>
+          </>
+        }
+      >
+        <Field label={t.convRenameTitle}>
+          {({ id: fieldId, describedBy, invalid }) => (
+            <Input
+              id={fieldId}
+              aria-describedby={describedBy}
+              invalid={invalid}
+              value={renameData?.title ?? ""}
               onChange={(e) => setRenameData({ title: e.target.value })}
               placeholder={t.convRenamePlaceholder}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleRename();
-                if (e.key === "Escape") setRenameData(null);
               }}
             />
+          )}
+        </Field>
+      </Modal>
 
-            <div className="modal-actions">
-              <button
-                className="btn btn--cancel"
-                onClick={() => setRenameData(null)}
-              >
-                {t.cancelBtn}
-              </button>
-              <button
-                className="btn btn--primary"
-                onClick={handleRename}
-                disabled={!renameData.title.trim()}
-              >
-                {t.save}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Delete modal */}
-      {showDelete && (
-        <div className="modal-overlay" onClick={() => setShowDelete(false)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <h3 className="modal-title modal-title--danger">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="15" y1="9" x2="9" y2="15" />
-                <line x1="9" y1="9" x2="15" y2="15" />
-              </svg>
-              <span>{t.convDeleteTitle}</span>
-            </h3>
-            <p className="modal-text">{t.convDeleteConfirm}</p>
-
-            <div className="modal-actions">
-              <button
-                className="btn btn--cancel"
-                onClick={() => setShowDelete(false)}
-              >
-                {t.cancelBtn}
-              </button>
-              <button className="btn btn--danger" onClick={handleDelete}>
-                {t.delete}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete confirm */}
+      <ConfirmDialog
+        open={showDelete}
+        onClose={() => setShowDelete(false)}
+        onConfirm={async () => {
+          try {
+            await handleDelete();
+            setShowDelete(false);
+          } catch {
+            toast.error(t.convDeleteError);
+          }
+        }}
+        title={t.convDeleteTitle}
+        message={t.convDeleteConfirm}
+        confirmLabel={t.delete}
+        cancelLabel={t.cancelBtn}
+        closeLabel={t.cancelBtn}
+        tone="danger"
+      />
     </div>
   );
 }

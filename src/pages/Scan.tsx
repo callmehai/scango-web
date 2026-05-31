@@ -7,6 +7,7 @@ import { LANGUAGE_MAP } from "../constants/languages";
 import { TOPIC_OPTIONS, TRANSLATION_LANGS } from "../constants/scan";
 import { UI_TEXT } from "../constants/uiText";
 import Dropdown from "../components/Dropdown";
+import { Card, Field, Button, ErrorState, Spinner, useToast } from "../components/ui";
 import "../styles/Scan.css";
 
 type DocumentTopic = "product" | "history" | "place" | "general";
@@ -22,6 +23,7 @@ export default function Scan() {
     setTargetLang: updateGlobalTargetLang,
   } = useSettings();
   const t = UI_TEXT[systemLang];
+  const toast = useToast();
 
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
@@ -41,6 +43,7 @@ export default function Scan() {
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [dragOver, setDragOver] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("lastSelectedTopic", topic);
@@ -57,17 +60,17 @@ export default function Scan() {
   }, [targetLang]);
 
   // ---------- FILE HANDLING ----------
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (!selectedFile) return;
-
+  // Presentation-only helper shared by inputs + drag/drop; same validation rules.
+  const acceptFile = (selectedFile: File) => {
     if (!selectedFile.type.startsWith("image/")) {
       setError(t.scanErrNotImage);
+      toast.error(t.scanErrNotImage);
       return;
     }
 
     if (selectedFile.size > 10 * 1024 * 1024) {
       setError(t.scanErrTooLarge);
+      toast.error(t.scanErrTooLarge);
       return;
     }
 
@@ -79,6 +82,20 @@ export default function Scan() {
       setPreview(event.target?.result as string);
     };
     reader.readAsDataURL(selectedFile);
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const selectedFile = e.target.files?.[0];
+    if (!selectedFile) return;
+    acceptFile(selectedFile);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setDragOver(false);
+    if (loading) return;
+    const dropped = e.dataTransfer.files?.[0];
+    if (dropped) acceptFile(dropped);
   };
 
   const handleRemoveFile = () => {
@@ -126,210 +143,257 @@ export default function Scan() {
       navigate(`/conversations/${conversationId}`);
     } catch {
       setError(t.scanErrSubmit);
-    } finally {
+      toast.error(t.scanErrSubmit);
       setLoading(false);
     }
   };
 
   return (
-    <div className="scan">
-      {/* Background decorative elements */}
-      <div className="scan__background">
-        <div className="gradient-orb gradient-orb--1"></div>
-        <div className="gradient-orb gradient-orb--2"></div>
-      </div>
+    <form className="scan-page" onSubmit={onSubmit}>
+      {/* Hidden inputs: gallery + camera capture */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept="image/*"
+        onChange={handleFileChange}
+        className="scan-file-input"
+        tabIndex={-1}
+        aria-hidden="true"
+        disabled={loading}
+      />
+      <input
+        ref={cameraInputRef}
+        type="file"
+        accept="image/*"
+        capture="environment"
+        onChange={handleFileChange}
+        className="scan-file-input"
+        tabIndex={-1}
+        aria-hidden="true"
+        disabled={loading}
+      />
 
-      {/* Main container */}
-      <div className="scan__container">
-        {/* Header */}
-        <header className="scan__header">
-          <div className="scan__icon-wrapper">
-            <svg
-              width="64"
-              height="64"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
-            </svg>
-          </div>
-          <h1 className="scan__title">
-            <span className="gradient-text">{t.scanTitle}</span>
-          </h1>
-          <p className="scan__subtitle">{t.scanHelp}</p>
-        </header>
+      {/* STEP 1: Upload Image */}
+      <Card className="scan-card" padding="md">
+        <h2 className="scan-section-title">{t.scanStep1}</h2>
 
-        {/* Form card */}
-        <form className="scan__card" onSubmit={onSubmit}>
-          {/* Error message */}
-          {error && (
-            <div className="scan__error" role="alert">
+        {!preview ? (
+          <div
+            className={`scan-dropzone${dragOver ? " is-dragover" : ""}`}
+            role="button"
+            tabIndex={0}
+            aria-label={t.scanUploadSelectAria}
+            onClick={() => fileInputRef.current?.click()}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                fileInputRef.current?.click();
+              }
+            }}
+            onDragOver={(e) => {
+              e.preventDefault();
+              if (!loading) setDragOver(true);
+            }}
+            onDragLeave={() => setDragOver(false)}
+            onDrop={handleDrop}
+          >
+            <div className="scan-dropzone-icon" aria-hidden="true">
               <svg
-                width="20"
-                height="20"
+                width="40"
+                height="40"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
               >
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="8" x2="12" y2="12" />
-                <line x1="12" y1="16" x2="12.01" y2="16" />
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                <circle cx="12" cy="13" r="4" />
               </svg>
-              <span>{error}</span>
             </div>
-          )}
-
-          {/* STEP 1: Upload Image */}
-          <section className="scan__section">
-            <h3 className="scan__section-title">{t.scanStep1}</h3>
-
-            <div className="scan__upload">
-              {/* Hidden file input for gallery */}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handleFileChange}
-                className="scan__file-input"
+            <p className="scan-dropzone-title">{t.scanUploadSelect}</p>
+            <div className="scan-dropzone-actions">
+              <Button
+                variant="primary"
+                size="sm"
                 disabled={loading}
-              />
-
-              {/* Hidden file input for camera */}
-              <input
-                ref={cameraInputRef}
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handleFileChange}
-                className="scan__file-input"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  cameraInputRef.current?.click();
+                }}
+                leftIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                }
+              >
+                {t.scanUploadCamera}
+              </Button>
+              <Button
+                variant="secondary"
+                size="sm"
                 disabled={loading}
-              />
-
-              {!preview ? (
-                <div className="scan__upload-options">
-                  <button
-                    type="button"
-                    className="scan__upload-button scan__upload-button--camera"
-                    onClick={() => cameraInputRef.current?.click()}
-                    disabled={loading}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  fileInputRef.current?.click();
+                }}
+                leftIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                   >
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                      <circle cx="12" cy="13" r="4" />
-                    </svg>
-                    <span>{t.scanUploadCamera}</span>
-                  </button>
-
-                  <button
-                    type="button"
-                    className="scan__upload-button scan__upload-button--gallery"
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={loading}
-                  >
-                    <svg
-                      width="40"
-                      height="40"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
-                      <circle cx="8.5" cy="8.5" r="1.5" />
-                      <polyline points="21 15 16 10 5 21" />
-                    </svg>
-                    <span>{t.scanUploadGallery}</span>
-                  </button>
-                </div>
-              ) : (
-                <>
-                  {file && (
-                    <div className="scan__file-info">
-                      <span>{file.name}</span>
-                      <span>({(file.size / 1024).toFixed(1)} KB)</span>
-                    </div>
-                  )}
-
-                  <div className="scan__preview">
-                    <img
-                      src={preview}
-                      alt={t.scanPreviewAlt}
-                      className="scan__preview-image"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    className="scan__upload-button"
-                    onClick={handleRemoveFile}
-                    disabled={loading}
-                    style={{ padding: "16px 24px" }}
-                  >
-                    <svg
-                      width="20"
-                      height="20"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <polyline points="3 6 5 6 21 6" />
-                      <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                    </svg>
-                    <span>{t.scanUploadSelected}</span>
-                  </button>
-                </>
-              )}
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                }
+              >
+                {t.scanUploadGallery}
+              </Button>
             </div>
-          </section>
+            <p className="scan-dropzone-hint">{t.scanErrTooLarge}</p>
+          </div>
+        ) : (
+          <div className="scan-preview">
+            {file && (
+              <div className="scan-file-info">
+                <span className="scan-file-name">{file.name}</span>
+                <span className="scan-file-size">
+                  ({(file.size / 1024).toFixed(1)} KB)
+                </span>
+              </div>
+            )}
 
-          {/* STEP 2: Select Topic */}
-          <section className="scan__section">
-            <h3 className="scan__section-title">{t.scanStep2}</h3>
-
-            <div className="scan__topic-options">
-              {TOPIC_OPTIONS.map((opt) => (
-                <label key={opt.value} className="scan__topic-option">
-                  <input
-                    type="radio"
-                    name="topic"
-                    value={opt.value}
-                    checked={topic === opt.value}
-                    onChange={() => setTopic(opt.value)}
-                    disabled={loading}
-                    className="scan__topic-input"
-                  />
-                  <div className="scan__topic-card">
-                    <span className="scan__topic-icon">{opt.icon}</span>
-                    <span>{t.topicLabels[opt.value]}</span>
-                  </div>
-                </label>
-              ))}
+            <div className="scan-preview-frame">
+              <img src={preview} alt={t.scanPreviewAlt} />
+              <button
+                type="button"
+                className="scan-preview-remove"
+                onClick={handleRemoveFile}
+                disabled={loading}
+                aria-label={t.scanUploadSelectedAria}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="18" y1="6" x2="6" y2="18" />
+                  <line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
             </div>
-          </section>
 
-          {/* STEP 3: Language Settings */}
-          <section className="scan__section">
-            <h3 className="scan__section-title">{t.scanStep3}</h3>
+            <div className="scan-preview-actions">
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={loading}
+                leftIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                    <circle cx="8.5" cy="8.5" r="1.5" />
+                    <polyline points="21 15 16 10 5 21" />
+                  </svg>
+                }
+              >
+                {t.scanUploadSelect}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => cameraInputRef.current?.click()}
+                disabled={loading}
+                leftIcon={
+                  <svg
+                    width="18"
+                    height="18"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                  >
+                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
+                    <circle cx="12" cy="13" r="4" />
+                  </svg>
+                }
+              >
+                {t.scanUploadCamera}
+              </Button>
+            </div>
+          </div>
+        )}
+      </Card>
 
-            <div className="scan__language">
-              <label>{t.scanSourceLang}</label>
+      {/* STEP 2: Select Topic */}
+      <Card className="scan-card" padding="md">
+        <h2 className="scan-section-title">{t.scanStep2}</h2>
+        <p className="scan-section-hint">{t.scanTopicDesc}</p>
+
+        <div
+          className="scan-topics"
+          role="radiogroup"
+          aria-label={t.scanStep2}
+        >
+          {TOPIC_OPTIONS.map((opt) => {
+            const active = topic === opt.value;
+            return (
+              <button
+                key={opt.value}
+                type="button"
+                role="radio"
+                aria-checked={active}
+                className={`scan-topic-chip${active ? " is-active" : ""}`}
+                onClick={() => setTopic(opt.value)}
+                disabled={loading}
+              >
+                <span className="scan-topic-icon" aria-hidden="true">
+                  {opt.icon}
+                </span>
+                <span>{t.topicLabels[opt.value]}</span>
+              </button>
+            );
+          })}
+        </div>
+      </Card>
+
+      {/* STEP 3: Language Settings */}
+      <Card className="scan-card" padding="md">
+        <h2 className="scan-section-title">{t.scanStep3}</h2>
+
+        <div className="scan-lang-grid">
+          <div className="scan-lang-col">
+            <Field label={t.scanSourceLang}>
               <Dropdown<TargetLanguage>
                 value={sourceLang}
                 onChange={(v) => !loading && setSourceLang(v)}
                 ariaLabel={t.scanSourceLang}
                 minWidth={260}
+                searchable
+                searchPlaceholder={t.dropdownSearchPlaceholder}
+                noResultsLabel={t.dropdownNoResults}
                 options={[
                   ...Object.entries(LANGUAGE_MAP)
                     .filter(([, lang]) => lang.engine2Supported)
@@ -349,62 +413,65 @@ export default function Scan() {
                     })),
                 ]}
               />
+            </Field>
+          </div>
 
-              <label>{t.scanTargetLang}</label>
+          {/* Animated "translate from → to" indicator */}
+          <div className="scan-lang-arrow" aria-hidden="true">
+            <span className="scan-lang-arrow__chevron">›</span>
+            <span className="scan-lang-arrow__chevron">›</span>
+            <span className="scan-lang-arrow__chevron">›</span>
+          </div>
+
+          <div className="scan-lang-col">
+            <Field label={t.scanTargetLang}>
               <Dropdown<TargetLanguage>
                 value={targetLang}
                 onChange={(v) => !loading && setTargetLang(v)}
                 ariaLabel={t.scanTargetLang}
                 minWidth={260}
+                searchable
+                searchPlaceholder={t.dropdownSearchPlaceholder}
+                noResultsLabel={t.dropdownNoResults}
                 options={TRANSLATION_LANGS.map((l) => ({
                   value: l.code,
                   label: `${l.flag} ${l.label}`,
                 }))}
               />
-            </div>
-          </section>
-
-          {/* SUBMIT BUTTON */}
-          <div className="scan__actions">
-            <button
-              type="submit"
-              className="scan__submit-btn"
-              disabled={!file || loading}
-            >
-              {loading ? (
-                <>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    style={{ animation: "spin 1s linear infinite" }}
-                  >
-                    <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                  </svg>
-                  <span>{t.scanProcessing}</span>
-                </>
-              ) : (
-                <>
-                  <svg
-                    width="20"
-                    height="20"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                  >
-                    <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
-                  </svg>
-                  <span>{t.scanSubmit}</span>
-                </>
-              )}
-            </button>
+            </Field>
           </div>
-        </form>
-      </div>
-    </div>
+        </div>
+      </Card>
+
+      {/* Inline error (also surfaced via toast) */}
+      {error && !loading && (
+        <ErrorState
+          message={error}
+          onRetry={() => setError(null)}
+          retryLabel={t.cancelBtn}
+        />
+      )}
+
+      {/* SUBMIT */}
+      <Button
+        type="submit"
+        fullWidth
+        size="lg"
+        loading={loading}
+        disabled={!file || loading}
+      >
+        {loading ? t.scanProcessing : t.scanSubmit}
+      </Button>
+
+      {/* Processing overlay */}
+      {loading && (
+        <div className="scan-overlay" role="status" aria-live="polite">
+          <div className="scan-overlay-box">
+            <Spinner size="lg" label={t.scanProcessing} />
+            <p className="scan-overlay-text">{t.scanProcessing}</p>
+          </div>
+        </div>
+      )}
+    </form>
   );
 }

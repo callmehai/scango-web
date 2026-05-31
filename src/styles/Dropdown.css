@@ -17,9 +17,9 @@
   padding: 9px 14px;
   font-size: 14px;
   font-weight: 500;
-  color: var(--color-text, #111);
-  background: var(--modal-input-bg, #fff);
-  border: 1px solid var(--modal-border, rgba(0, 0, 0, 0.1));
+  color: var(--color-text);
+  background: var(--modal-input-bg);
+  border: 1px solid var(--modal-border);
   border-radius: 10px;
   cursor: pointer;
   transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
@@ -33,13 +33,13 @@
 }
 
 .dropdown__trigger[aria-expanded="true"] {
-  border-color: #4f6df5;
-  box-shadow: 0 0 0 3px rgba(79, 109, 245, 0.15);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 [data-theme="dark"] .dropdown__trigger {
   background: rgba(255, 255, 255, 0.06);
-  color: #fff;
+  color: var(--color-text);
   border-color: rgba(255, 255, 255, 0.12);
 }
 
@@ -79,8 +79,8 @@
   left: 0;
   right: auto;
   z-index: 9999;
-  list-style: none;
-  margin: 0;
+  display: flex;
+  flex-direction: column;
   padding: 6px;
   /* Auto-size to fit longest option, but at least as wide as the trigger so
      short labels (e.g. "20") never get clipped by ellipsis. */
@@ -88,12 +88,68 @@
   width: max-content;
   max-width: 320px;
   border-radius: 12px;
-  background: #ffffff;
-  border: 1px solid rgba(0, 0, 0, 0.06);
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.12);
-  max-height: 280px;
-  overflow-y: auto;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  max-height: 320px;
+  overflow: hidden; /* the inner list scrolls; the search box stays pinned */
   animation: dropdown-pop 0.12s ease-out;
+}
+
+/* Scrollable option list */
+.dropdown__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  flex: 1 1 auto;
+}
+
+/* ---- Search box (searchable dropdowns) ---- */
+.dropdown__search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 10px;
+  margin-bottom: 6px;
+  border: 1px solid var(--color-border);
+  border-radius: 8px;
+  background: var(--color-surface-sunken);
+  flex-shrink: 0;
+}
+
+.dropdown__search:focus-within {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
+}
+
+.dropdown__search-icon {
+  flex-shrink: 0;
+  color: var(--color-text-tertiary);
+}
+
+.dropdown__search-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background: transparent;
+  padding: 8px 0;
+  font-size: 14px;
+  color: var(--color-text);
+}
+
+.dropdown__search-input::placeholder {
+  color: var(--color-text-tertiary);
+}
+
+/* Empty / no-results message */
+.dropdown__empty {
+  margin: 0;
+  padding: 16px 12px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--color-text-secondary);
 }
 
 /* Flip up when there isn't enough room below the trigger */
@@ -115,9 +171,9 @@
 }
 
 [data-theme="dark"] .dropdown__panel {
-  background: #1e1e28;
-  border-color: rgba(255, 255, 255, 0.08);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4);
+  background: var(--color-surface);
+  border-color: var(--color-border);
+  box-shadow: var(--shadow-lg);
 }
 
 @keyframes dropdown-pop {
@@ -141,7 +197,7 @@
   border: none;
   border-radius: 8px;
   background: transparent;
-  color: var(--color-text, #111);
+  color: var(--color-text);
   cursor: pointer;
   text-align: left;
   transition: background 0.12s ease;
@@ -152,7 +208,7 @@
 }
 
 [data-theme="dark"] .dropdown__option {
-  color: #f1f1f1;
+  color: var(--color-text);
 }
 
 [data-theme="dark"] .dropdown__option:hover {
@@ -179,11 +235,11 @@
 }
 
 .dropdown__check {
-  color: #4f6df5;
+  color: var(--color-primary);
   flex-shrink: 0;
   margin-left: 8px;
 }
 
 [data-theme="dark"] .dropdown__check {
-  color: #818cf8;
+  color: var(--color-primary);
 }

@@ -1,10 +1,11 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
 import { UI_TEXT } from "../constants/uiText";
-import Dropdown from "../components/Dropdown";
+import { Card, ErrorState, Field, Spinner, useToast } from "../components/ui";
 import api from "../api/axios";
 
-import "../styles/Settings.css";
+import "../styles/Admin.css";
 
 interface AdminConfig {
   geminiModel: string;
@@ -13,7 +14,7 @@ interface AdminConfig {
   availableModels: string[];
 }
 
-/** Minimal on/off switch, themed via CSS vars (no extra stylesheet needed). */
+/** Minimal on/off switch, themed via CSS tokens. */
 function Switch({
   checked,
   onChange,
@@ -33,32 +34,9 @@ function Switch({
       aria-label={ariaLabel}
       disabled={disabled}
       onClick={() => onChange(!checked)}
-      style={{
-        width: 52,
-        height: 30,
-        borderRadius: 999,
-        border: "none",
-        cursor: disabled ? "default" : "pointer",
-        padding: 3,
-        opacity: disabled ? 0.6 : 1,
-        background: checked
-          ? "var(--color-primary, #6366f1)"
-          : "var(--color-border, #555)",
-        display: "inline-flex",
-        alignItems: "center",
-        justifyContent: checked ? "flex-end" : "flex-start",
-        transition: "background .2s",
-      }}
+      className="admin-switch"
     >
-      <span
-        style={{
-          width: 24,
-          height: 24,
-          borderRadius: "50%",
-          background: "#fff",
-          display: "block",
-        }}
-      />
+      <span className="admin-switch__knob" />
     </button>
   );
 }
@@ -66,17 +44,23 @@ function Switch({
 export default function AdminSettings() {
   const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
+  const toast = useToast();
 
   const [config, setConfig] = useState<AdminConfig | null>(null);
   const [saving, setSaving] = useState(false);
-  const [saved, setSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const load = () => {
+    setError(null);
     api
       .get<AdminConfig>("/admin/settings")
       .then((res) => setConfig(res.data))
       .catch(() => setError(t.adminLoadError));
+  };
+
+  useEffect(() => {
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [t.adminLoadError]);
 
   const patch = async (
@@ -86,15 +70,14 @@ export default function AdminSettings() {
     const prev = config;
     setConfig({ ...config, ...body }); // optimistic
     setSaving(true);
-    setSaved(false);
     setError(null);
     try {
       const res = await api.patch<AdminConfig>("/admin/settings", body);
       setConfig(res.data);
-      setSaved(true);
+      toast.success(t.adminSaved);
     } catch {
       setConfig(prev); // rollback
-      setError(t.adminSaveError);
+      toast.error(t.adminSaveError);
     } finally {
       setSaving(false);
     }
@@ -107,93 +90,96 @@ export default function AdminSettings() {
   };
 
   if (!config) {
+    if (error) {
+      return (
+        <div className="admin-page">
+          <ErrorState message={error} onRetry={load} retryLabel={t.commonRetry} />
+        </div>
+      );
+    }
     return (
-      <div className="settings">
-        <main className="settings__main">
-          {error ? (
-            <p className="settings__description">{error}</p>
-          ) : (
-            <div className="loading-spinner" />
-          )}
-        </main>
+      <div className="admin-state">
+        <Spinner size="lg" label={t.adminTitle} />
       </div>
     );
   }
 
   return (
-    <div className="settings">
-      <header className="settings__header">
-        <h1 className="settings__title">{t.adminTitle}</h1>
-      </header>
+    <div className="admin-page">
+      {/* Link to user management */}
+      <Link to="/admin/users" className="admin-link-anchor">
+        <Card interactive padding="md" className="admin-link-card">
+          <span className="admin-link-card__text">
+            <span className="admin-link-card__title">{t.adminUsersTitle}</span>
+            <span className="admin-link-card__desc">{t.adminSearchUser}</span>
+          </span>
+          <span className="admin-link-card__arrow" aria-hidden="true">
+            →
+          </span>
+        </Card>
+      </Link>
 
-      <main className="settings__main">
-        <section className="settings__section">
-          <h2 className="settings__section-title">🤖 {t.adminAiSection}</h2>
+      {/* AI configuration */}
+      <Card as="section" padding="lg" className="admin-section">
+        <h2 className="admin-section__title">
+          <span aria-hidden="true">🤖</span> {t.adminAiSection}
+        </h2>
 
-          <div className="settings__card">
-            {/* Model */}
-            <div className="settings__item">
-              <div className="settings__item-label">
-                <label className="settings__label">{t.adminModelLabel}</label>
-                <p className="settings__description">{t.adminModelDesc}</p>
-              </div>
-              <div className="settings__item-control">
-                <Dropdown<string>
-                  value={config.geminiModel}
-                  onChange={(v) => patch({ geminiModel: v })}
-                  ariaLabel={t.adminModelLabel}
-                  minWidth={300}
-                  options={config.availableModels.map((m) => ({
-                    value: m,
-                    label: modelLabel(m),
-                  }))}
-                />
-              </div>
-            </div>
+        {/* Model */}
+        <Field label={t.adminModelLabel} hint={t.adminModelDesc}>
+          {({ id, describedBy }) => (
+            <select
+              id={id}
+              aria-describedby={describedBy}
+              className="admin-select"
+              value={config.geminiModel}
+              disabled={saving}
+              aria-label={t.adminModelLabel}
+              onChange={(e) => patch({ geminiModel: e.target.value })}
+            >
+              {config.availableModels.map((m) => (
+                <option key={m} value={m}>
+                  {modelLabel(m)}
+                </option>
+              ))}
+            </select>
+          )}
+        </Field>
 
-            {/* AI mock */}
-            <div className="settings__item">
-              <div className="settings__item-label">
-                <label className="settings__label">{t.adminAiMockLabel}</label>
-                <p className="settings__description">{t.adminAiMockDesc}</p>
-              </div>
-              <div className="settings__item-control">
-                <Switch
-                  checked={config.aiMock}
-                  onChange={(v) => patch({ aiMock: v })}
-                  ariaLabel={t.adminAiMockLabel}
-                  disabled={saving}
-                />
-              </div>
-            </div>
+        {/* AI mock */}
+        <div className="admin-switch-row">
+          <span className="admin-switch-row__text">
+            <span className="admin-switch-row__label">{t.adminAiMockLabel}</span>
+            <span className="admin-switch-row__desc">{t.adminAiMockDesc}</span>
+          </span>
+          <Switch
+            checked={config.aiMock}
+            onChange={(v) => patch({ aiMock: v })}
+            ariaLabel={t.adminAiMockLabel}
+            disabled={saving}
+          />
+        </div>
 
-            {/* OCR mock */}
-            <div className="settings__item">
-              <div className="settings__item-label">
-                <label className="settings__label">{t.adminOcrMockLabel}</label>
-                <p className="settings__description">{t.adminOcrMockDesc}</p>
-              </div>
-              <div className="settings__item-control">
-                <Switch
-                  checked={config.ocrMock}
-                  onChange={(v) => patch({ ocrMock: v })}
-                  ariaLabel={t.adminOcrMockLabel}
-                  disabled={saving}
-                />
-              </div>
-            </div>
-          </div>
+        {/* OCR mock */}
+        <div className="admin-switch-row">
+          <span className="admin-switch-row__text">
+            <span className="admin-switch-row__label">{t.adminOcrMockLabel}</span>
+            <span className="admin-switch-row__desc">{t.adminOcrMockDesc}</span>
+          </span>
+          <Switch
+            checked={config.ocrMock}
+            onChange={(v) => patch({ ocrMock: v })}
+            ariaLabel={t.adminOcrMockLabel}
+            disabled={saving}
+          />
+        </div>
 
-          <p className="settings__description" style={{ marginTop: 12 }}>
-            {saving ? t.adminSaving : saved ? t.adminSaved : ""}
-            {error ? (
-              <span style={{ color: "var(--color-danger, #e5484d)" }}>
-                {error}
-              </span>
-            ) : null}
+        {saving && (
+          <p className="admin-saving-hint" role="status">
+            <Spinner size="sm" /> {t.adminSaving}
           </p>
-        </section>
-      </main>
+        )}
+      </Card>
     </div>
   );
 }

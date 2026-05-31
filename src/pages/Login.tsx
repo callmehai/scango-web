@@ -1,102 +1,74 @@
-import { useState, type FormEvent } from "react";
-import { Link, Navigate, useLocation, useNavigate } from "react-router-dom";
+import { useState } from "react";
+import { Navigate, useNavigate } from "react-router-dom";
+import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../hooks/useAuth";
 import { useSettings } from "../hooks/useSettings";
 import { UI_TEXT } from "../constants/uiText";
 import Logo from "../components/Logo";
 import "../styles/Auth.css";
-import axios from "axios";
 
 export default function Login() {
   const navigate = useNavigate();
-  const location = useLocation();
   const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
-  const { login, user, loading } = useAuth();
+  const { loginWithGoogle, user } = useAuth();
+  const [error, setError] = useState(false);
 
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  /**
-   * Discriminated union so lang switch re-translates the fallback message at
-   * render time (storing a translated string would freeze it in state).
-   */
-  const [error, setError] = useState<
-    { kind: "generic" } | { kind: "msg"; text: string } | null
-  >(null);
-  const errorText = !error
-    ? null
-    : error.kind === "msg"
-      ? error.text                       // backend-supplied message
-      : t.authLoginGenericError;         // re-translates when lang changes
-
+  // Always land on Home after authenticating. We intentionally do NOT restore
+  // the pre-login location: it may belong to a previous account (e.g. a
+  // conversation owned by another user), which would 404 / fail right after
+  // logging in. Home is always valid for any account.
   if (user) {
-    const from = (location.state as { from?: string } | null)?.from ?? "/";
-    return <Navigate to={from} replace />;
+    return <Navigate to="/" replace />;
   }
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    try {
-      await login(email.trim(), password);
-      navigate("/", { replace: true });
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.message) {
-        setError({ kind: "msg", text: String(err.response.data.message) });
-      } else {
-        setError({ kind: "generic" });
-      }
-    }
-  };
 
   return (
     <div className="auth-page">
-      <div className="auth-card">
-        <Logo height={56} className="auth-card__logo" />
-        <h1 className="auth-card__title">{t.authLoginTitle}</h1>
-        <p className="auth-card__subtitle">{t.authLoginSubtitle}</p>
+      {/* animated ambient background */}
+      <div className="auth-bg" aria-hidden="true">
+        <span className="auth-blob auth-blob--1" />
+        <span className="auth-blob auth-blob--2" />
+        <span className="auth-blob auth-blob--3" />
+      </div>
 
-        <form className="auth-form" onSubmit={submit}>
-          <label className="auth-field">
-            <span>{t.authEmail}</span>
-            <input
-              type="email"
-              autoComplete="username"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@scango.vn"
-            />
-          </label>
+      <div className="auth-glass">
+        <div className="auth-logo-float">
+          <Logo height={64} iconOnly className="auth-logo-float__icon" />
+        </div>
+        <span className="auth-wordmark">{t.appName}</span>
 
-          <label className="auth-field">
-            <span>{t.authPassword}</span>
-            <input
-              type="password"
-              autoComplete="current-password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
-            />
-          </label>
+        <h1 className="auth-glass__title">{t.authLoginTitle}</h1>
+        <p className="auth-glass__subtitle">{t.authGoogleSubtitle}</p>
 
-          {errorText && (
-            <div className="auth-error" role="alert">
-              {errorText}
-            </div>
-          )}
+        {error && (
+          <div className="auth-error" role="alert">
+            {t.authLoginGenericError}
+          </div>
+        )}
 
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? t.authSubmitting : t.authLoginBtn}
-          </button>
-        </form>
+        <div className="auth-google">
+          <GoogleLogin
+            onSuccess={async (cred) => {
+              if (!cred.credential) return;
+              setError(false);
+              try {
+                await loginWithGoogle(cred.credential);
+                navigate("/", { replace: true });
+              } catch {
+                setError(true);
+              }
+            }}
+            onError={() => setError(true)}
+            text="continue_with"
+            shape="pill"
+            size="large"
+            width="300"
+            theme="filled_blue"
+            logo_alignment="left"
+          />
+        </div>
 
-        <p className="auth-switch">
-          {t.authNoAccount}{" "}
-          <Link to="/register">{t.authRegisterBtn}</Link>
-        </p>
+        <p className="auth-note">{t.authTermsNote}</p>
       </div>
     </div>
   );

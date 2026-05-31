@@ -7,6 +7,19 @@ import { UI_TEXT } from "../constants/uiText";
 import { TOPIC_OPTIONS } from "../constants/scan";
 import ActionMenu from "../components/ActionMenu";
 import Dropdown from "../components/Dropdown";
+import {
+  Button,
+  Card,
+  Badge,
+  Skeleton,
+  EmptyState,
+  ErrorState,
+  Modal,
+  ConfirmDialog,
+  Field,
+  Input,
+  useToast,
+} from "../components/ui";
 import "../styles/History.css";
 
 const PAGE_SIZE_OPTIONS = [5, 10, 15, 20] as const;
@@ -37,6 +50,7 @@ const RenameIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
     <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
@@ -53,11 +67,82 @@ const TrashIcon = () => (
     strokeWidth="2"
     strokeLinecap="round"
     strokeLinejoin="round"
+    aria-hidden="true"
   >
     <polyline points="3 6 5 6 21 6" />
     <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
     <line x1="10" y1="11" x2="10" y2="17" />
     <line x1="14" y1="11" x2="14" y2="17" />
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden="true"
+  >
+    <circle cx="11" cy="11" r="8" />
+    <path d="M21 21l-4.35-4.35" />
+  </svg>
+);
+
+const GridIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <rect x="3" y="3" width="7" height="7" rx="1.5" />
+    <rect x="14" y="3" width="7" height="7" rx="1.5" />
+    <rect x="3" y="14" width="7" height="7" rx="1.5" />
+    <rect x="14" y="14" width="7" height="7" rx="1.5" />
+  </svg>
+);
+
+const ListIcon = () => (
+  <svg
+    width="18"
+    height="18"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <line x1="8" y1="6" x2="21" y2="6" />
+    <line x1="8" y1="12" x2="21" y2="12" />
+    <line x1="8" y1="18" x2="21" y2="18" />
+    <circle cx="4" cy="6" r="1" />
+    <circle cx="4" cy="12" r="1" />
+    <circle cx="4" cy="18" r="1" />
+  </svg>
+);
+
+const ConvIcon = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    aria-hidden="true"
+  >
+    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+    <path d="M8 10h8M8 14h4" />
   </svg>
 );
 
@@ -97,6 +182,7 @@ export default function History() {
   const navigate = useNavigate();
   const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
+  const toast = useToast();
 
   useEffect(() => {
     const id = setTimeout(() => setQDebounced(q.trim()), 300);
@@ -155,8 +241,9 @@ export default function History() {
       await api.delete(`/conversations/${id}`);
       setList((prev) => prev.filter((c) => c.id !== id));
       setTotal((n) => Math.max(0, n - 1));
+      toast.success(t.historyDeleteSuccess);
     } catch {
-      setError(t.historyDeleteError);
+      toast.error(t.historyDeleteError, { duration: 6000 });
     } finally {
       setDeleteId(null);
     }
@@ -173,8 +260,9 @@ export default function History() {
           c.id === renameData.id ? { ...c, title: renameData.title } : c,
         ),
       );
+      toast.success(t.historyRenameSuccess);
     } catch {
-      setError(t.historyRenameError);
+      toast.error(t.historyRenameError, { duration: 6000 });
     } finally {
       setRenameData(null);
     }
@@ -205,61 +293,32 @@ export default function History() {
   const formatDate = (iso: string) =>
     new Date(iso).toLocaleString(systemLang === "vi" ? "vi-VN" : "en-US");
 
+  const isFiltering = Boolean(topic || qDebounced);
+  const showSkeleton = loading && list.length === 0;
+  const showEmpty = !loading && list.length === 0 && !error;
+  const showError = !loading && Boolean(error) && list.length === 0;
+  const showList = list.length > 0;
+
   return (
     <div className="history">
-      <div className="history__background">
-        <div className="gradient-orb gradient-orb--1"></div>
-        <div className="gradient-orb gradient-orb--2"></div>
-      </div>
+      {/* Toolbar: search + topic filter + grid/list toggle */}
+      <div className="history__toolbar">
+        <div className="history__search">
+          <span className="history__search-icon" aria-hidden="true">
+            <SearchIcon />
+          </span>
+          <Input
+            type="search"
+            inputSize="md"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder={t.historySearchPlaceholder}
+            aria-label={t.historySearchPlaceholder}
+            className="history__search-input"
+          />
+        </div>
 
-      <div className="history__container">
-        <header className="history__header">
-          <div className="history__icon-wrapper">
-            <svg
-              width="48"
-              height="48"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-            >
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
-          </div>
-          <h1 className="history__title">
-            <span className="gradient-text">{t.historyTitle}</span>
-          </h1>
-          {total === 0 && !loading && (
-            <p className="history__subtitle">{t.historyEmptyTitle}</p>
-          )}
-        </header>
-
-        {/* Filter bar — search left, topic + view toggle right (all in one row) */}
-        <div className="history__filters">
-          <div className="history__search-wrapper">
-            <svg
-              className="history__search-icon"
-              width="18"
-              height="18"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              aria-hidden="true"
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="M21 21l-4.35-4.35" />
-            </svg>
-            <input
-              className="history__search-input"
-              type="search"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-              placeholder={t.historySearchPlaceholder}
-              aria-label={t.historySearchPlaceholder}
-            />
-          </div>
-
+        <div className="history__toolbar-right">
           <Dropdown<string>
             value={topic}
             onChange={setTopic}
@@ -274,7 +333,11 @@ export default function History() {
             ]}
           />
 
-          <div className="history__view-toggle" role="group" aria-label="View mode">
+          <div
+            className="history__view-toggle"
+            role="group"
+            aria-label={t.historyViewToggleLabel}
+          >
             <button
               type="button"
               className={`history__view-btn ${
@@ -285,12 +348,7 @@ export default function History() {
               aria-label={t.historyViewGrid}
               title={t.historyViewGrid}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <rect x="3" y="3" width="7" height="7" rx="1.5" />
-                <rect x="14" y="3" width="7" height="7" rx="1.5" />
-                <rect x="3" y="14" width="7" height="7" rx="1.5" />
-                <rect x="14" y="14" width="7" height="7" rx="1.5" />
-              </svg>
+              <GridIcon />
             </button>
             <button
               type="button"
@@ -302,167 +360,204 @@ export default function History() {
               aria-label={t.historyViewList}
               title={t.historyViewList}
             >
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="8" y1="6" x2="21" y2="6" />
-                <line x1="8" y1="12" x2="21" y2="12" />
-                <line x1="8" y1="18" x2="21" y2="18" />
-                <circle cx="4" cy="6" r="1" />
-                <circle cx="4" cy="12" r="1" />
-                <circle cx="4" cy="18" r="1" />
-              </svg>
+              <ListIcon />
             </button>
           </div>
         </div>
+      </div>
 
-        {error && (
-          <div className="history__error" role="alert">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="10" />
-              <line x1="12" y1="8" x2="12" y2="12" />
-              <line x1="12" y1="16" x2="12.01" y2="16" />
-            </svg>
-            <span>{error}</span>
-          </div>
-        )}
+      {/* SKELETON — initial load */}
+      {showSkeleton && (
+        <div
+          className={`history__list ${
+            viewMode === "grid" ? "history__list--grid" : "history__list--rows"
+          }`}
+          aria-busy="true"
+        >
+          {Array.from({ length: viewMode === "grid" ? 6 : 5 }).map((_, i) => (
+            <Card key={i} padding="md" className="history__card">
+              <div className="history__card-body">
+                <Skeleton variant="circle" width={48} height={48} />
+                <div className="history__card-text">
+                  <Skeleton width="70%" height={18} radius="var(--radius-sm)" />
+                  <Skeleton width="40%" height={13} radius="var(--radius-sm)" />
+                </div>
+              </div>
+            </Card>
+          ))}
+        </div>
+      )}
 
-        {loading && list.length === 0 && (
-          <div className="history__loading">
-            <div className="loading-spinner"></div>
-            <p>{t.historyLoading}</p>
-          </div>
-        )}
+      {/* ERROR — load failed, nothing to show */}
+      {showError && (
+        <ErrorState
+          message={error}
+          onRetry={fetchPage}
+          retryLabel={t.commonRetry}
+        />
+      )}
 
-        {!loading && list.length === 0 && !error && (
-          <div className="history__empty">
-            {topic || qDebounced ? (
-              <>
-                <div className="history__empty-icon">🔍</div>
-                <h2 className="history__empty-title">{t.historyNoResults}</h2>
-              </>
-            ) : (
-              <>
-                <div className="history__empty-icon">💭</div>
-                <h2 className="history__empty-title">{t.historyEmptyTitle}</h2>
-                <p className="history__empty-text">{t.historyEmptyDesc}</p>
+      {/* EMPTY — no results */}
+      {showEmpty &&
+        (isFiltering ? (
+          <EmptyState
+            icon="🔍"
+            title={t.historyNoResults}
+            description={t.historyNoResultsDesc}
+            action={
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setTopic("");
+                  setQ("");
+                }}
+              >
+                {t.historyClearFilters}
+              </Button>
+            }
+          />
+        ) : (
+          <EmptyState
+            icon="💭"
+            title={t.historyEmptyTitle}
+            description={t.historyEmptyDesc}
+            action={
+              <Button onClick={() => navigate("/scan")}>{t.scanBtn}</Button>
+            }
+          />
+        ))}
+
+      {/* GRID MODE — responsive Card grid with topic thumbnail */}
+      {showList && viewMode === "grid" && (
+        <div
+          className={`history__list history__list--grid ${
+            loading ? "history__list--refreshing" : ""
+          }`}
+        >
+          {list.map((c) => {
+            const topicInfo = topicOption(c.topic);
+            return (
+              <Card
+                key={c.id}
+                padding="none"
+                hoverable
+                className="history__card"
+              >
                 <button
-                  className="history__cta-btn"
-                  onClick={() => navigate("/scan")}
-                >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-                    <circle cx="12" cy="13" r="4" />
-                  </svg>
-                  <span>{t.scanBtn}</span>
-                </button>
-              </>
-            )}
-          </div>
-        )}
-
-        {/* GRID MODE — 3-column cards on desktop, 1 on mobile */}
-        {list.length > 0 && viewMode === "grid" && (
-          <div
-            className={`history__list history__list--grid ${
-              loading ? "history__list--refreshing" : ""
-            }`}
-          >
-            {list.map((c) => (
-              <div key={c.id} className="conversation-card">
-                <button
-                  className="conversation-card__main"
+                  type="button"
+                  className="history__card-open"
                   onClick={() => navigate(`/conversations/${c.id}`)}
-                  aria-label={`${t.historyOpenConversation}: ${c.title || t.historyUntitled}`}
+                  aria-label={`${t.historyOpenConversation}: ${
+                    c.title || t.historyUntitled
+                  }`}
                 >
-                  <div className="conversation-card__icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-                      <path d="M8 10h8M8 14h4" />
-                    </svg>
-                  </div>
-                  <div className="conversation-card__content">
-                    <h3 className="conversation-card__title">
+                  <span className="history__thumb" aria-hidden="true">
+                    {topicInfo ? (
+                      <span className="history__thumb-emoji">
+                        {topicInfo.icon}
+                      </span>
+                    ) : (
+                      <ConvIcon />
+                    )}
+                  </span>
+                  <span className="history__card-text">
+                    <span className="history__card-title">
                       {c.title || t.historyUntitled}
-                    </h3>
-                    <time className="conversation-card__time">
-                      {formatDate(c.createdAt)}
-                    </time>
-                  </div>
+                    </span>
+                    <span className="history__card-meta">
+                      {topicInfo && (
+                        <Badge variant="primary" size="sm">
+                          {topicInfo.label}
+                        </Badge>
+                      )}
+                      <time className="history__card-time">
+                        {formatDate(c.createdAt)}
+                      </time>
+                    </span>
+                  </span>
                 </button>
-                <div className="conversation-card__actions">
+                <div className="history__card-actions">
                   <ActionMenu
-                    ariaLabel={`Actions for ${c.title || t.historyUntitled}`}
+                    ariaLabel={`${t.historyActionsFor}: ${
+                      c.title || t.historyUntitled
+                    }`}
                     items={buildActions(c)}
                   />
                 </div>
-              </div>
-            ))}
-          </div>
-        )}
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-        {/* LIST MODE — table-like rows with columns */}
-        {list.length > 0 && viewMode === "list" && (
-          <div
-            className={`history__table-wrapper ${
-              loading ? "history__list--refreshing" : ""
-            }`}
-          >
-            <table className="history__table">
-              <thead>
-                <tr>
-                  <th>{t.historyColName}</th>
-                  <th className="history__table-col-topic">{t.historyColTopic}</th>
-                  <th className="history__table-col-date">{t.historyColCreated}</th>
-                  <th className="history__table-col-actions" aria-label={t.historyColActions} />
-                </tr>
-              </thead>
-              <tbody>
-                {list.map((c) => {
-                  const topicInfo = topicOption(c.topic);
-                  return (
-                    <tr
-                      key={c.id}
-                      className="history__row"
-                      onClick={() => navigate(`/conversations/${c.id}`)}
-                    >
-                      <td className="history__cell-name">
-                        <span className="history__row-title">
-                          {c.title || t.historyUntitled}
-                        </span>
-                      </td>
-                      <td className="history__cell-topic">
-                        {topicInfo && (
-                          <span className="history__topic-badge">
-                            <span>{topicInfo.icon}</span>
-                            <span>{topicInfo.label}</span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="history__cell-date">
+      {/* LIST MODE — compact rows with thumbnail */}
+      {showList && viewMode === "list" && (
+        <div
+          className={`history__list history__list--rows ${
+            loading ? "history__list--refreshing" : ""
+          }`}
+        >
+          {list.map((c) => {
+            const topicInfo = topicOption(c.topic);
+            return (
+              <Card
+                key={c.id}
+                padding="none"
+                hoverable
+                className="history__card history__card--row"
+              >
+                <button
+                  type="button"
+                  className="history__card-open history__card-open--row"
+                  onClick={() => navigate(`/conversations/${c.id}`)}
+                  aria-label={`${t.historyOpenConversation}: ${
+                    c.title || t.historyUntitled
+                  }`}
+                >
+                  <span className="history__thumb history__thumb--sm" aria-hidden="true">
+                    {topicInfo ? (
+                      <span className="history__thumb-emoji">
+                        {topicInfo.icon}
+                      </span>
+                    ) : (
+                      <ConvIcon />
+                    )}
+                  </span>
+                  <span className="history__row-text">
+                    <span className="history__card-title">
+                      {c.title || t.historyUntitled}
+                    </span>
+                    <span className="history__row-meta">
+                      {topicInfo && (
+                        <Badge variant="neutral" size="sm">
+                          {topicInfo.label}
+                        </Badge>
+                      )}
+                      <time className="history__card-time">
                         {formatDate(c.createdAt)}
-                      </td>
-                      <td
-                        className="history__cell-actions"
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        <ActionMenu
-                          ariaLabel={`Actions for ${c.title || t.historyUntitled}`}
-                          items={buildActions(c)}
-                        />
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
+                      </time>
+                    </span>
+                  </span>
+                </button>
+                <div className="history__card-actions history__card-actions--row">
+                  <ActionMenu
+                    ariaLabel={`${t.historyActionsFor}: ${
+                      c.title || t.historyUntitled
+                    }`}
+                    items={buildActions(c)}
+                  />
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
-        {/* Pagination — always visible. 3-column layout:
-            [Showing X-Y of Z]   [« ‹ 1 2 3 › »]   [Per page ▼] */}
+      {/* Pagination — only when there is at least one page of data */}
+      {showList && (
         <nav
           className="history__pagination"
-          aria-label="Pagination"
-          role="navigation"
+          aria-label={t.historyPaginationLabel}
         >
           <div className="history__pagination-summary">
             {total > 0 &&
@@ -479,9 +574,9 @@ export default function History() {
               className="history__pagination-arrow"
               onClick={() => setPage(1)}
               disabled={safePage <= 1 || loading}
-              aria-label="First page"
+              aria-label={t.historyPaginationFirst}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M11 17l-5-5 5-5M18 17l-5-5 5-5" />
               </svg>
             </button>
@@ -492,7 +587,7 @@ export default function History() {
               disabled={safePage <= 1 || loading}
               aria-label={t.historyPaginationPrev}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M15 18l-6-6 6-6" />
               </svg>
             </button>
@@ -519,7 +614,7 @@ export default function History() {
               disabled={safePage >= totalPages || loading}
               aria-label={t.historyPaginationNext}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M9 18l6-6-6-6" />
               </svg>
             </button>
@@ -528,9 +623,9 @@ export default function History() {
               className="history__pagination-arrow"
               onClick={() => setPage(totalPages)}
               disabled={safePage >= totalPages || loading}
-              aria-label="Last page"
+              aria-label={t.historyPaginationLast}
             >
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
                 <path d="M13 17l5-5-5-5M6 17l5-5-5-5" />
               </svg>
             </button>
@@ -550,78 +645,61 @@ export default function History() {
             />
           </div>
         </nav>
-      </div>
+      )}
 
       {/* Rename Modal */}
-      {renameData && (
-        <div className="modal-overlay" onClick={() => setRenameData(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title">
-                <RenameIcon />
-                {t.historyRenameTitle}
-              </h3>
-            </div>
-            <input
-              className="modal-input"
-              value={renameData.title}
+      <Modal
+        open={Boolean(renameData)}
+        onClose={() => setRenameData(null)}
+        title={t.historyRenameTitle}
+        closeLabel={t.commonClose}
+        size="sm"
+        footer={
+          <>
+            <Button variant="subtle" onClick={() => setRenameData(null)}>
+              {t.cancelBtn}
+            </Button>
+            <Button
+              onClick={handleRename}
+              disabled={!renameData?.title.trim()}
+            >
+              {t.save}
+            </Button>
+          </>
+        }
+      >
+        <Field label={t.historyRenameTitle}>
+          {({ id }) => (
+            <Input
+              id={id}
+              autoFocus
+              value={renameData?.title ?? ""}
               onChange={(e) =>
-                setRenameData({ ...renameData, title: e.target.value })
+                setRenameData((prev) =>
+                  prev ? { ...prev, title: e.target.value } : prev,
+                )
               }
               placeholder={t.historyRenamePlaceholder}
-              autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleRename();
-                if (e.key === "Escape") setRenameData(null);
               }}
             />
-            <div className="modal-actions">
-              <button
-                className="modal-btn modal-btn--cancel"
-                onClick={() => setRenameData(null)}
-              >
-                {t.cancelBtn}
-              </button>
-              <button
-                className="modal-btn modal-btn--primary"
-                onClick={handleRename}
-                disabled={!renameData.title.trim()}
-              >
-                {t.save}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+          )}
+        </Field>
+      </Modal>
 
-      {/* Delete Modal */}
-      {deleteId && (
-        <div className="modal-overlay" onClick={() => setDeleteId(null)}>
-          <div className="modal-card" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 className="modal-title modal-title--danger">
-                <TrashIcon />
-                {t.historyDeleteTitle}
-              </h3>
-            </div>
-            <p className="modal-text">{t.historyDeleteConfirm}</p>
-            <div className="modal-actions">
-              <button
-                className="modal-btn modal-btn--cancel"
-                onClick={() => setDeleteId(null)}
-              >
-                {t.cancelBtn}
-              </button>
-              <button
-                className="modal-btn modal-btn--danger"
-                onClick={() => handleDelete(deleteId)}
-              >
-                {t.delete}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Delete confirmation */}
+      <ConfirmDialog
+        open={Boolean(deleteId)}
+        onClose={() => setDeleteId(null)}
+        onConfirm={() => (deleteId ? handleDelete(deleteId) : undefined)}
+        title={t.historyDeleteTitle}
+        message={t.historyDeleteConfirm}
+        confirmLabel={t.delete}
+        cancelLabel={t.cancelBtn}
+        closeLabel={t.commonClose}
+        tone="danger"
+      />
     </div>
   );
 }

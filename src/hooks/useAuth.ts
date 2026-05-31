@@ -16,6 +16,7 @@ interface AuthContextValue {
   /** True once we've checked localStorage + /me on mount. */
   ready: boolean;
   login: (email: string, password: string) => Promise<void>;
+  loginWithGoogle: (idToken: string) => Promise<void>;
   register: (
     email: string,
     password: string,
@@ -89,6 +90,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const loginWithGoogle = useCallback(async (idToken: string) => {
+    setLoading(true);
+    try {
+      const res = await api.post<AuthResponse>("/auth/google", {
+        idToken,
+        platform: "web",
+      });
+      tokenStore.set(res.data.accessToken, res.data.refreshToken);
+      setUser(res.data.user);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const register = useCallback(
     async (email: string, password: string, name: string) => {
       setLoading(true);
@@ -125,7 +140,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return createElement(
     AuthContext.Provider,
-    { value: { user, loading, ready, login, register, logout, refreshMe } },
+    {
+      value: {
+        user,
+        loading,
+        ready,
+        login,
+        loginWithGoogle,
+        register,
+        logout,
+        refreshMe,
+      },
+    },
     children,
   );
 }

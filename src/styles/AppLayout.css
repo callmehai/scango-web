@@ -1,0 +1,192 @@
+/* ============================================================
+   AppLayout — consistent app shell for authenticated pages.
+   Sticky header (back + logo + title + controls) and a
+   max-width content container. Token-only, light/dark,
+   mobile-first, safe-area aware, reduced-motion safe.
+   ============================================================ */
+
+.app-shell {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+/* ---- Header ----
+   3 zones: left side (back) | centered brand | right side (controls).
+   Side clusters share an equal min-width so the brand stays optically
+   centered regardless of whether the back button is present. */
+.app-header {
+  position: sticky;
+  top: 0;
+  z-index: var(--z-header);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  height: 64px;
+  padding: 0 var(--space-4);
+  /* safe-area aware (notch / rounded corners on mobile) */
+  padding-left: max(var(--space-4), env(safe-area-inset-left));
+  padding-right: max(var(--space-4), env(safe-area-inset-right));
+  padding-top: env(safe-area-inset-top);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: var(--glass-blur);
+  backdrop-filter: var(--glass-blur);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* Left / right side clusters — equal width keeps the brand centered */
+.app-header__side {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+.app-header__side--right {
+  justify-content: flex-end;
+}
+
+/* Centered brand logo (button -> home) */
+.app-header__brand {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border: 0;
+  background: transparent;
+  padding: var(--space-1) var(--space-2);
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  color: inherit;
+  transition: opacity var(--transition-fast),
+    transform var(--transition-fast);
+}
+
+.app-header__brand:hover {
+  opacity: 0.85;
+  transform: translateY(-1px);
+}
+
+.app-header__brand:active {
+  transform: translateY(0);
+}
+
+/* Right cluster: theme / lang / profile / logout */
+.app-header__controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  flex: 0 0 auto;
+}
+
+/* ---- Page title (large heading at top of content for sub-pages) ---- */
+.app-page-title {
+  margin: 0 0 var(--space-5);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  letter-spacing: -0.01em;
+  color: var(--color-text);
+}
+
+/* ---- Icon control button (used by HeaderControls + back) ---- */
+.app-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--color-border);
+  background: var(--color-surface);
+  color: var(--color-text);
+  cursor: pointer;
+  box-shadow: var(--shadow-xs);
+  transition: background var(--transition-base),
+    border-color var(--transition-base), transform var(--transition-base);
+}
+
+.app-icon-btn:hover {
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+  transform: translateY(-1px);
+}
+
+.app-icon-btn:active {
+  transform: translateY(0);
+}
+
+.app-icon-btn--lang {
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  letter-spacing: 0.02em;
+}
+
+/* ---- Content ---- */
+.app-content {
+  flex: 1 1 auto;
+  width: 100%;
+  max-width: var(--container-xl);
+  margin: 0 auto;
+  padding: var(--space-6) var(--space-4) var(--space-9);
+  /* safe-area aware horizontal padding for landscape/notch */
+  padding-left: max(var(--space-4), env(safe-area-inset-left));
+  padding-right: max(var(--space-4), env(safe-area-inset-right));
+  /* room for home-indicator on iOS */
+  padding-bottom: max(var(--space-9), env(safe-area-inset-bottom));
+}
+
+.app-content--narrow {
+  max-width: var(--container-md);
+}
+
+.app-content--flush {
+  padding-left: 0;
+  padding-right: 0;
+}
+
+/* ---- Mobile ---- */
+@media (max-width: 640px) {
+  .app-header {
+    height: 56px;
+    gap: var(--space-2);
+    padding-left: max(var(--space-3), env(safe-area-inset-left));
+    padding-right: max(var(--space-3), env(safe-area-inset-right));
+  }
+
+  .app-header__controls {
+    gap: var(--space-1);
+  }
+
+  .app-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+
+  .app-page-title {
+    font-size: var(--text-xl);
+    margin-bottom: var(--space-4);
+  }
+
+  .app-content {
+    padding: var(--space-4) var(--space-3) var(--space-8);
+    padding-left: max(var(--space-3), env(safe-area-inset-left));
+    padding-right: max(var(--space-3), env(safe-area-inset-right));
+    padding-bottom: max(var(--space-8), env(safe-area-inset-bottom));
+  }
+}
+
+/* Very small screens: hide the "ScanGo" wordmark, keep just the icon.
+   Logo renders <span(wrapper)><img/><span(wordmark)/></span>; target the
+   trailing text span structurally so the Logo component stays untouched. */
+@media (max-width: 380px) {
+  .app-header__brand-mark > span {
+    display: none;
+  }
+}

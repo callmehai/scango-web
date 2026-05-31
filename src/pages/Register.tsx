@@ -1,128 +1,42 @@
-import { useState, type FormEvent } from "react";
-import { Link, Navigate, useNavigate } from "react-router-dom";
-import { useAuth } from "../hooks/useAuth";
+import { Navigate } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
 import { UI_TEXT } from "../constants/uiText";
 import Logo from "../components/Logo";
+import { Spinner } from "../components/ui";
 import "../styles/Auth.css";
-import axios from "axios";
 
+// Google sign-in handles both sign-in and sign-up, so there's a single auth
+// entry point. /register just redirects to /login. We render the shared auth
+// glass shell with a spinner so the (near-instant) redirect stays visually
+// consistent with the rest of the auth surface.
 export default function Register() {
-  const navigate = useNavigate();
   const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
-  const { register, user, loading } = useAuth();
-
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [accepted, setAccepted] = useState(false);
-  /** See Login.tsx — keep raw kind so lang switch re-translates live. */
-  const [error, setError] = useState<
-    | { kind: "generic" }
-    | { kind: "termsRequired" }
-    | { kind: "msg"; text: string }
-    | null
-  >(null);
-  const errorText = !error
-    ? null
-    : error.kind === "msg"
-      ? error.text
-      : error.kind === "termsRequired"
-        ? t.authMustAcceptTerms
-        : t.authRegisterGenericError;
-
-  if (user) return <Navigate to="/" replace />;
-
-  const submit = async (e: FormEvent) => {
-    e.preventDefault();
-    setError(null);
-    if (!accepted) {
-      setError({ kind: "termsRequired" });
-      return;
-    }
-    try {
-      await register(email.trim(), password, name.trim());
-      navigate("/", { replace: true });
-    } catch (err) {
-      if (axios.isAxiosError(err) && err.response?.data?.message) {
-        setError({ kind: "msg", text: String(err.response.data.message) });
-      } else {
-        setError({ kind: "generic" });
-      }
-    }
-  };
 
   return (
-    <div className="auth-page">
-      <div className="auth-card">
-        <Logo height={56} className="auth-card__logo" />
-        <h1 className="auth-card__title">{t.authRegisterTitle}</h1>
-        <p className="auth-card__subtitle">{t.authRegisterSubtitle}</p>
+    <>
+      <Navigate to="/login" replace />
+      <div className="auth-page">
+        <div className="auth-bg" aria-hidden="true">
+          <span className="auth-blob auth-blob--1" />
+          <span className="auth-blob auth-blob--2" />
+          <span className="auth-blob auth-blob--3" />
+        </div>
 
-        <form className="auth-form" onSubmit={submit}>
-          <label className="auth-field">
-            <span>{t.authName}</span>
-            <input
-              type="text"
-              autoComplete="name"
-              required
-              minLength={1}
-              maxLength={100}
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-            />
-          </label>
+        <div className="auth-glass">
+          <div className="auth-logo-float">
+            <Logo height={64} iconOnly className="auth-logo-float__icon" />
+          </div>
+          <span className="auth-wordmark">{t.appName}</span>
 
-          <label className="auth-field">
-            <span>{t.authEmail}</span>
-            <input
-              type="email"
-              autoComplete="email"
-              required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              placeholder="you@scango.vn"
-            />
-          </label>
-
-          <label className="auth-field">
-            <span>{t.authPassword}</span>
-            <input
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={8}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder={t.authPasswordHint}
-            />
-          </label>
-
-          <label className="auth-checkbox">
-            <input
-              type="checkbox"
-              checked={accepted}
-              onChange={(e) => setAccepted(e.target.checked)}
-            />
-            <span>{t.authAcceptTerms}</span>
-          </label>
-
-          {errorText && (
-            <div className="auth-error" role="alert">
-              {errorText}
+          <div className="auth-status">
+            <div className="auth-status__spinner">
+              <Spinner size="lg" label={t.authRegisterRedirect} />
             </div>
-          )}
-
-          <button type="submit" className="auth-submit" disabled={loading}>
-            {loading ? t.authSubmitting : t.authRegisterBtn}
-          </button>
-        </form>
-
-        <p className="auth-switch">
-          {t.authHaveAccount} <Link to="/login">{t.authLoginBtn}</Link>
-        </p>
+            <p className="auth-glass__subtitle">{t.authRegisterRedirect}</p>
+          </div>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

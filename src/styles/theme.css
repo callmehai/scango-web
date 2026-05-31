@@ -202,6 +202,10 @@
   --gradient-secondary: linear-gradient(135deg, #8b5cf6, #ec4899);
   --gradient-accent: linear-gradient(135deg, #8b5cf6, #ec4899);
   --gradient-primary-hover: linear-gradient(135deg, #4f46e5, #7c3aed); /* legacy */
+
+  /* --- Interaction tints (theme-aware hover backgrounds) --- */
+  --color-hover-subtle: rgba(0, 0, 0, 0.05);     /* neutral row/icon hover */
+  --color-hover-primary: rgba(var(--color-primary-rgb), 0.1); /* selectable item hover */
 }
 
 /* ============================================================================
@@ -232,7 +236,9 @@
   --color-text-tertiary: #9ca3af;
   --color-text-muted: #9ca3af;       /* legacy alias */
   --color-text-inverse: #1f2937;
-  --color-text-on-primary: #0f172a;
+  /* Brand primary/gradient stays indigo→violet (dark) in BOTH themes, so text
+     on top must stay white — do NOT flip this to a dark color in dark mode. */
+  --color-text-on-primary: #ffffff;
 
   /* --- Background --- */
   --color-bg: #0f0f0f;
@@ -293,6 +299,10 @@
   --gradient-secondary: linear-gradient(135deg, #8b5cf6, #ec4899);
   --gradient-accent: linear-gradient(135deg, #8b5cf6, #ec4899);
   --gradient-primary-hover: linear-gradient(135deg, #4f46e5, #7c3aed); /* legacy */
+
+  /* --- Interaction tints (theme-aware hover backgrounds) --- */
+  --color-hover-subtle: rgba(255, 255, 255, 0.08);
+  --color-hover-primary: rgba(var(--color-primary-rgb), 0.18);
 }
 
 /* ============================================================================

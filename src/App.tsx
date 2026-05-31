@@ -16,21 +16,17 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
 import { SettingsProvider, useSettings } from "./hooks/useSettings";
 import { AuthProvider } from "./hooks/useAuth";
-import { UI_TEXT } from "./constants/uiText";
 import "./styles/index.css"; // Import global styles with theme
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID ?? "";
 
 /**
- * Routes that need the authenticated app shell. Split out so it can call
- * useSettings() (must be inside <SettingsProvider>) to localise page titles.
- * Auth pages (login / register / verify-email) intentionally render WITHOUT
- * the shell.
+ * Route table. IMPORTANT: this component must NOT read `systemLang` — if it
+ * re-renders on a language switch, every <Route element={...}> is recreated and
+ * React Router remounts the whole page (feels like a full reload). Page titles
+ * are passed as stable i18n KEYS (titleKey) and translated inside AppLayout.
  */
 function AppRoutes() {
-  const { systemLang } = useSettings();
-  const t = UI_TEXT[systemLang];
-
   return (
     <Routes>
       {/* Public auth pages — no app shell */}
@@ -43,7 +39,7 @@ function AppRoutes() {
         path="/"
         element={
           <ProtectedRoute>
-            <AppLayout title={t.homeTitle}>
+            <AppLayout titleKey="homeTitle">
               <Home />
             </AppLayout>
           </ProtectedRoute>
@@ -53,7 +49,7 @@ function AppRoutes() {
         path="/scan"
         element={
           <ProtectedRoute>
-            <AppLayout title={t.scanTitle} showBack>
+            <AppLayout titleKey="scanTitle" showBack>
               <Scan />
             </AppLayout>
           </ProtectedRoute>
@@ -63,7 +59,7 @@ function AppRoutes() {
         path="/conversations/:id"
         element={
           <ProtectedRoute>
-            <AppLayout title={t.conversationTitle} showBack>
+            <AppLayout titleKey="conversationTitle" showBack>
               <Conversation />
             </AppLayout>
           </ProtectedRoute>
@@ -73,7 +69,7 @@ function AppRoutes() {
         path="/history"
         element={
           <ProtectedRoute>
-            <AppLayout title={t.historyTitle} showBack>
+            <AppLayout titleKey="historyTitle" showBack>
               <History />
             </AppLayout>
           </ProtectedRoute>
@@ -83,7 +79,7 @@ function AppRoutes() {
         path="/settings"
         element={
           <ProtectedRoute>
-            <AppLayout title={t.settingsTitle} showBack>
+            <AppLayout titleKey="settingsTitle" showBack>
               <Settings />
             </AppLayout>
           </ProtectedRoute>
@@ -93,7 +89,7 @@ function AppRoutes() {
         path="/profile"
         element={
           <ProtectedRoute>
-            <AppLayout title={t.profileTitle} showBack narrow>
+            <AppLayout titleKey="profileTitle" showBack narrow>
               <Profile />
             </AppLayout>
           </ProtectedRoute>
@@ -103,7 +99,7 @@ function AppRoutes() {
         path="/admin"
         element={
           <AdminRoute>
-            <AppLayout title={t.adminTitle} showBack>
+            <AppLayout titleKey="adminTitle" showBack>
               <AdminSettings />
             </AppLayout>
           </AdminRoute>
@@ -113,7 +109,7 @@ function AppRoutes() {
         path="/admin/users"
         element={
           <AdminRoute>
-            <AppLayout title={t.adminUsersTitle} showBack>
+            <AppLayout titleKey="adminUsersTitle" showBack>
               <AdminUsers />
             </AppLayout>
           </AdminRoute>
@@ -123,16 +119,33 @@ function AppRoutes() {
   );
 }
 
+/**
+ * Wraps the app in <GoogleOAuthProvider> with the current language as the GSI
+ * locale. CRITICAL: do NOT key this on systemLang — that would remount the
+ * ENTIRE app (router + auth + current page) on every language switch, which
+ * feels exactly like a full page reload. The Login page already remounts just
+ * its <GoogleLogin> button (key={systemLang}) to pick up the new locale, so the
+ * provider can stay mounted. Must live inside <SettingsProvider> to read it.
+ */
+function GoogleAuthShell({ children }: { children: React.ReactNode }) {
+  const { systemLang } = useSettings();
+  return (
+    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID} locale={systemLang}>
+      {children}
+    </GoogleOAuthProvider>
+  );
+}
+
 export default function App() {
   return (
-    <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-      <SettingsProvider>
+    <SettingsProvider>
+      <GoogleAuthShell>
         <BrowserRouter>
           <AuthProvider>
             <AppRoutes />
           </AuthProvider>
         </BrowserRouter>
-      </SettingsProvider>
-    </GoogleOAuthProvider>
+      </GoogleAuthShell>
+    </SettingsProvider>
   );
 }

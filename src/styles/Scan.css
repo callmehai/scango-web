@@ -107,7 +107,7 @@
 .scan-dropzone-hint {
   margin: 0;
   font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
 }
 
 /* ---- File info ---- */
@@ -132,7 +132,7 @@
 }
 
 .scan-file-size {
-  color: var(--color-text-tertiary);
+  color: var(--color-text-secondary);
   white-space: nowrap;
 }
 

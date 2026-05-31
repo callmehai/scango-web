@@ -10,6 +10,12 @@ export interface AppLayoutProps {
   /** Optional page title. Shown as a large heading at the top of the content
    *  on sub-pages (i.e. when `showBack` is true). */
   title?: ReactNode;
+  /** i18n key for the title, resolved INSIDE this component. Prefer this over
+   *  `title` from route definitions: passing an already-translated string from
+   *  the router makes the route element identity change on every language
+   *  switch, which remounts the whole page (feels like a reload). A stable key
+   *  keeps the element identical, so only this header re-translates. */
+  titleKey?: keyof (typeof UI_TEXT)["vi"];
   /** Show a back button (history -1) on the left of the header. Default false. */
   showBack?: boolean;
   /** Constrain content to a narrower (reading) width. Default false. */
@@ -44,6 +50,7 @@ export interface AppLayoutProps {
  */
 export default function AppLayout({
   title,
+  titleKey,
   showBack = false,
   narrow = false,
   flush = false,
@@ -52,6 +59,12 @@ export default function AppLayout({
   const navigate = useNavigate();
   const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
+
+  // titleKey points at a plain-string entry in UI_TEXT (a few entries are
+  // formatter functions, hence the typeof guard before rendering).
+  const keyed = titleKey ? t[titleKey] : undefined;
+  const resolvedTitle: ReactNode =
+    title ?? (typeof keyed === "string" ? keyed : undefined);
 
   const contentClass = [
     "app-content",
@@ -106,7 +119,9 @@ export default function AppLayout({
       </header>
 
       <main className={contentClass}>
-        {title && showBack && <h1 className="app-page-title">{title}</h1>}
+        {resolvedTitle && showBack && (
+          <h1 className="app-page-title">{resolvedTitle}</h1>
+        )}
         {children}
       </main>
     </div>

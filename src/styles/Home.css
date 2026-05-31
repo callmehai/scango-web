@@ -106,6 +106,12 @@
   line-height: var(--leading-tight);
 }
 
+/* On dark, lift the CTA title to pure-bright text so it stays crisp over the
+   brand wash (::before) rather than reading as a dim gray. */
+[data-theme="dark"] .home__cta-title {
+  color: #ffffff;
+}
+
 .home__cta-desc {
   margin: 0;
   font-size: var(--text-sm);

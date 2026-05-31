@@ -5,6 +5,7 @@ import { useAuth } from "../hooks/useAuth";
 import { useSettings } from "../hooks/useSettings";
 import { UI_TEXT } from "../constants/uiText";
 import Logo from "../components/Logo";
+import AuthTopControls from "../components/AuthTopControls";
 import "../styles/Auth.css";
 
 export default function Login() {
@@ -24,6 +25,8 @@ export default function Login() {
 
   return (
     <div className="auth-page">
+      <AuthTopControls />
+
       {/* animated ambient background */}
       <div className="auth-bg" aria-hidden="true">
         <span className="auth-blob auth-blob--1" />
@@ -48,6 +51,10 @@ export default function Login() {
 
         <div className="auth-google">
           <GoogleLogin
+            // Remount when the app language changes so Google re-renders the
+            // button in the locale set on <GoogleOAuthProvider> (the GSI
+            // iframe caches its label per mount).
+            key={systemLang}
             onSuccess={async (cred) => {
               if (!cred.credential) return;
               setError(false);

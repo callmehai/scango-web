@@ -24,7 +24,7 @@
 
 .action-menu__trigger:hover,
 .action-menu__trigger[aria-expanded="true"] {
-  background: rgba(0, 0, 0, 0.06);
+  background: var(--color-hover-subtle);
 }
 
 .action-menu__trigger:active {
@@ -33,11 +33,6 @@
 
 [data-theme="dark"] .action-menu__trigger {
   color: var(--color-text);
-}
-
-[data-theme="dark"] .action-menu__trigger:hover,
-[data-theme="dark"] .action-menu__trigger[aria-expanded="true"] {
-  background: rgba(255, 255, 255, 0.1);
 }
 
 .action-menu__panel {
@@ -93,15 +88,11 @@
 }
 
 .action-menu__item:hover {
-  background: rgba(79, 109, 245, 0.1);
+  background: var(--color-hover-primary);
 }
 
 [data-theme="dark"] .action-menu__item {
   color: var(--color-text);
-}
-
-[data-theme="dark"] .action-menu__item:hover {
-  background: rgba(99, 102, 241, 0.18);
 }
 
 .action-menu__item--danger {

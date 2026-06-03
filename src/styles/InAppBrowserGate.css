@@ -1,0 +1,70 @@
+/* Full-screen gate that blocks the app inside in-app browsers and pushes the
+   user to a real browser. Token-only, light/dark aware. */
+.inapp-gate {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal);
+  display: grid;
+  place-items: center;
+  padding: var(--space-6);
+  background: var(--color-bg);
+}
+
+.inapp-gate__card {
+  width: 100%;
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--space-4);
+}
+
+.inapp-gate__title {
+  margin: 0;
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  line-height: var(--leading-tight);
+  color: var(--color-text);
+}
+
+.inapp-gate__body {
+  margin: 0;
+  font-size: var(--text-base);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+.inapp-gate__hint {
+  margin: 0;
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-snug);
+}
+
+.inapp-gate__btn {
+  width: 100%;
+  padding: var(--space-3) var(--space-5);
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  border: none;
+  border-radius: var(--radius-full);
+  background: var(--gradient-primary);
+  color: var(--color-text-on-primary);
+  cursor: pointer;
+  transition: filter var(--transition-fast);
+}
+
+.inapp-gate__btn:hover {
+  filter: brightness(1.05);
+}
+
+.inapp-gate__dismiss {
+  margin-top: var(--space-1);
+  background: none;
+  border: none;
+  font-size: var(--text-sm);
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  text-decoration: underline;
+}

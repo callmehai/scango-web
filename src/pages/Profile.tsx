@@ -7,7 +7,10 @@ import {
   Badge,
   Button,
   Card,
+  ConfirmDialog,
+  Field,
   Input,
+  Modal,
   ProgressBar,
   Skeleton,
   useToast,
@@ -46,8 +49,8 @@ export default function Profile() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
-  // ----- name editing -----
-  const [editingName, setEditingName] = useState(false);
+  // ----- edit-profile modal (name + avatar) -----
+  const [editing, setEditing] = useState(false);
   const [nameDraft, setNameDraft] = useState("");
   const [savingName, setSavingName] = useState(false);
 
@@ -57,6 +60,7 @@ export default function Profile() {
   const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [avatarVersion, setAvatarVersion] = useState(0);
   const [avatarBusy, setAvatarBusy] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   useEffect(() => {
     api
@@ -90,15 +94,20 @@ export default function Profile() {
 
   if (!user) return null; // ProtectedRoute guarantees a user
 
-  const startEditName = () => {
+  const openEdit = () => {
     setNameDraft(user.name || "");
-    setEditingName(true);
+    setEditing(true);
+  };
+
+  const closeEdit = () => {
+    if (savingName || avatarBusy) return; // don't close mid-request
+    setEditing(false);
   };
 
   const saveName = async () => {
     const next = nameDraft.trim();
     if (!next || next === user.name) {
-      setEditingName(false);
+      setEditing(false);
       return;
     }
     setSavingName(true);
@@ -106,7 +115,7 @@ export default function Profile() {
       await api.patch("/me", { name: next });
       await refreshMe();
       toast.success(t.profileNameSaved);
-      setEditingName(false);
+      setEditing(false);
     } catch {
       toast.error(t.profileNameError);
     } finally {
@@ -186,97 +195,15 @@ export default function Profile() {
       {/* Identity */}
       <Card padding="lg">
         <div className="profile__identity">
-          <div className="profile__avatar-wrap">
-            <button
-              type="button"
-              className="profile__avatar"
-              onClick={() => fileRef.current?.click()}
-              disabled={avatarBusy}
-              aria-label={t.profileChangeAvatar}
-              title={t.profileChangeAvatar}
-            >
-              {avatarUrl ? (
-                <img
-                  src={avatarUrl}
-                  alt=""
-                  className="profile__avatar-img"
-                />
-              ) : (
-                <span aria-hidden="true">{initial}</span>
-              )}
-              <span className="profile__avatar-overlay" aria-hidden="true">
-                ✎
-              </span>
-            </button>
-            <input
-              ref={fileRef}
-              type="file"
-              accept="image/*"
-              hidden
-              onChange={onAvatarFile}
-            />
-            <div className="profile__avatar-actions">
-              <button
-                type="button"
-                className="profile__link-btn"
-                onClick={() => fileRef.current?.click()}
-                disabled={avatarBusy}
-              >
-                {t.profileChangeAvatar}
-              </button>
-              {hasAvatar && (
-                <button
-                  type="button"
-                  className="profile__link-btn profile__link-btn--danger"
-                  onClick={removeAvatar}
-                  disabled={avatarBusy}
-                >
-                  {t.profileRemoveAvatar}
-                </button>
-              )}
-            </div>
+          <div className="profile__avatar">
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="" className="profile__avatar-img" />
+            ) : (
+              <span aria-hidden="true">{initial}</span>
+            )}
           </div>
           <div className="profile__identity-main">
-            {editingName ? (
-              <div className="profile__name-edit">
-                <Input
-                  value={nameDraft}
-                  onChange={(e) => setNameDraft(e.target.value)}
-                  maxLength={100}
-                  autoFocus
-                  aria-label={t.profileName}
-                />
-                <div className="profile__name-actions">
-                  <Button
-                    size="sm"
-                    variant="primary"
-                    loading={savingName}
-                    onClick={saveName}
-                  >
-                    {t.profileSave}
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant="ghost"
-                    disabled={savingName}
-                    onClick={() => setEditingName(false)}
-                  >
-                    {t.profileCancel}
-                  </Button>
-                </div>
-              </div>
-            ) : (
-              <div className="profile__name-row">
-                <h2 className="profile__name">{user.name || user.email}</h2>
-                <button
-                  type="button"
-                  className="profile__link-btn"
-                  onClick={startEditName}
-                >
-                  {t.profileEdit}
-                </button>
-              </div>
-            )}
+            <h2 className="profile__name">{user.name || user.email}</h2>
             <p className="profile__email">{user.email}</p>
             <div className="profile__badges">
               <Badge variant={isPaid ? "primary" : "neutral"}>
@@ -296,8 +223,116 @@ export default function Profile() {
               )}
             </div>
           </div>
+          <Button
+            className="profile__edit-btn"
+            variant="secondary"
+            size="sm"
+            onClick={openEdit}
+          >
+            {t.profileEdit}
+          </Button>
         </div>
       </Card>
+
+      {/* Edit-profile modal: avatar + display name */}
+      <Modal
+        open={editing}
+        onClose={closeEdit}
+        title={t.profileEditTitle}
+        size="sm"
+        closeLabel={t.profileCancel}
+        footer={
+          <>
+            <Button
+              variant="ghost"
+              disabled={savingName || avatarBusy}
+              onClick={closeEdit}
+            >
+              {t.profileCancel}
+            </Button>
+            <Button
+              variant="primary"
+              loading={savingName}
+              disabled={avatarBusy}
+              onClick={saveName}
+            >
+              {t.profileSave}
+            </Button>
+          </>
+        }
+      >
+        <div className="profile-edit">
+          <div className="profile-edit__avatar-block">
+            <div className="profile-edit__avatar">
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="profile-edit__avatar-img"
+                />
+              ) : (
+                <span aria-hidden="true">{initial}</span>
+              )}
+            </div>
+            <div className="profile-edit__avatar-actions">
+              <Button
+                size="sm"
+                variant="secondary"
+                loading={avatarBusy}
+                onClick={() => fileRef.current?.click()}
+              >
+                {t.profileChangeAvatar}
+              </Button>
+              {hasAvatar && (
+                <Button
+                  size="sm"
+                  variant="danger"
+                  disabled={avatarBusy}
+                  onClick={() => setConfirmRemove(true)}
+                >
+                  {t.profileRemoveAvatar}
+                </Button>
+              )}
+            </div>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={onAvatarFile}
+            />
+          </div>
+
+          <Field label={t.profileName}>
+            {({ id, describedBy, invalid }) => (
+              <Input
+                id={id}
+                aria-describedby={describedBy}
+                invalid={invalid}
+                value={nameDraft}
+                onChange={(e) => setNameDraft(e.target.value)}
+                maxLength={100}
+                autoFocus
+              />
+            )}
+          </Field>
+        </div>
+      </Modal>
+
+      <ConfirmDialog
+        open={confirmRemove}
+        onClose={() => setConfirmRemove(false)}
+        onConfirm={async () => {
+          await removeAvatar();
+          setConfirmRemove(false);
+        }}
+        tone="danger"
+        title={t.profileRemoveAvatarTitle}
+        message={t.profileRemoveAvatarConfirm}
+        confirmLabel={t.profileRemoveAvatar}
+        cancelLabel={t.profileCancel}
+        closeLabel={t.profileCancel}
+      />
 
       {/* Account info */}
       <Card padding="md">

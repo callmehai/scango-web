@@ -14,6 +14,7 @@ import AdminUsers from "./pages/AdminUsers";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import InAppBrowserGate from "./components/InAppBrowserGate";
 import { SettingsProvider, useSettings } from "./hooks/useSettings";
 import { AuthProvider } from "./hooks/useAuth";
 import "./styles/index.css"; // Import global styles with theme
@@ -139,6 +140,8 @@ function GoogleAuthShell({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <SettingsProvider>
+      {/* Blocks the app inside Messenger/Zalo WebViews → push to a real browser */}
+      <InAppBrowserGate />
       <GoogleAuthShell>
         <BrowserRouter>
           <AuthProvider>

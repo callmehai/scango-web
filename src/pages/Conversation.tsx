@@ -261,6 +261,29 @@ export default function Conversation() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
+  // Proactively reflect ask-quota exhaustion: disable the composer + show the
+  // banner before the user even tries. The 429 handler in sendStream is the
+  // safety net for the moment they hit the limit mid-session.
+  useEffect(() => {
+    let alive = true;
+    api
+      .get<{ limited: boolean; asksUsed: number; asksLimit: number }>(
+        "/me/usage",
+      )
+      .then((r) => {
+        if (!alive) return;
+        const u = r.data;
+        if (u.limited && u.asksUsed >= u.asksLimit) {
+          setQuotaReached(true);
+          setError(t.convQuotaError);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, [id, t.convQuotaError]);
+
   const sendStream = async () => {
     if (!input.trim() || loading) return;
 
@@ -694,7 +717,7 @@ export default function Conversation() {
               type="button"
               className="conversation-action-btn"
               onClick={sendStream}
-              disabled={!input.trim()}
+              disabled={!input.trim() || quotaReached}
               aria-label={t.convSendAria}
             >
               {t.convBtnSendText}
@@ -739,7 +762,7 @@ export default function Conversation() {
                 setComposeOpen(false);
                 sendStream();
               }}
-              disabled={!input.trim() || loading}
+              disabled={!input.trim() || loading || quotaReached}
             >
               {t.convBtnSendText}
             </Button>

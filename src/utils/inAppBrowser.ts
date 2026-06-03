@@ -49,5 +49,9 @@ export function openInSystemBrowser(targetUrl = window.location.href): boolean {
       `package=com.android.chrome;end`;
     return true;
   }
-  return false;
+  // iOS / other: WebViews can't be forced to Safari from script, but many
+  // in-app browsers hand a window.open() off to the system browser. Best-effort
+  // — the on-screen hint still covers the manual "••• → Open in Safari" path.
+  window.open(targetUrl, "_blank", "noopener");
+  return true;
 }

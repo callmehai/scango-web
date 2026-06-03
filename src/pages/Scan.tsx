@@ -44,10 +44,31 @@ export default function Scan() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [dragOver, setDragOver] = useState(false);
+  const [scanQuotaReached, setScanQuotaReached] = useState(false);
 
   useEffect(() => {
     localStorage.setItem("lastSelectedTopic", topic);
   }, [topic]);
+
+  // Disable scanning up-front when this week's scan quota is used up, instead
+  // of letting the user upload + submit only to get a 429 back.
+  useEffect(() => {
+    let alive = true;
+    api
+      .get<{ limited: boolean; scansUsed: number; scansLimit: number }>(
+        "/me/usage",
+      )
+      .then((r) => {
+        if (!alive) return;
+        if (r.data.limited && r.data.scansUsed >= r.data.scansLimit) {
+          setScanQuotaReached(true);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   const [sourceLang, setSourceLang] = useState<TargetLanguage>("auto");
 
@@ -141,9 +162,17 @@ export default function Scan() {
 
       const conversationId = await scanCreate(file);
       navigate(`/conversations/${conversationId}`);
-    } catch {
-      setError(t.scanErrSubmit);
-      toast.error(t.scanErrSubmit);
+    } catch (err) {
+      const status = (err as { response?: { status?: number } })?.response
+        ?.status;
+      if (status === 429) {
+        setScanQuotaReached(true);
+        setError(t.scanQuotaError);
+        toast.error(t.scanQuotaError);
+      } else {
+        setError(t.scanErrSubmit);
+        toast.error(t.scanErrSubmit);
+      }
       setLoading(false);
     }
   };
@@ -452,13 +481,23 @@ export default function Scan() {
         />
       )}
 
+      {/* Quota exhausted — block scanning + tell the user why */}
+      {scanQuotaReached && (
+        <div className="scan-quota-banner" role="alert">
+          <span className="scan-quota-banner__icon" aria-hidden="true">
+            ⚡
+          </span>
+          <span>{t.scanQuotaError}</span>
+        </div>
+      )}
+
       {/* SUBMIT */}
       <Button
         type="submit"
         fullWidth
         size="lg"
         loading={loading}
-        disabled={!file || loading}
+        disabled={!file || loading || scanQuotaReached}
       >
         {loading ? t.scanProcessing : t.scanSubmit}
       </Button>

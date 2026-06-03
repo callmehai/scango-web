@@ -19,13 +19,14 @@ import "../styles/InAppBrowserGate.css";
 export default function InAppBrowserGate() {
   const { systemLang } = useSettings();
   const t = UI_TEXT[systemLang];
-  const [dismissed, setDismissed] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const app = detectInAppBrowser();
-  if (!app || dismissed) return null;
+  if (!app) return null;
 
-  const canOpenDirectly = getMobilePlatform() === "android";
+  // Android can jump straight to Chrome; iOS can't be forced, so we also show
+  // the manual instruction below the (best-effort) primary button.
+  const isAndroid = getMobilePlatform() === "android";
 
   const copyLink = async () => {
     try {
@@ -47,33 +48,27 @@ export default function InAppBrowserGate() {
           {t.inAppGateBody}
         </p>
 
-        {canOpenDirectly ? (
-          <button
-            type="button"
-            className="inapp-gate__btn"
-            onClick={() => openInSystemBrowser()}
-          >
-            {t.authOpenInBrowser}
-          </button>
-        ) : (
-          <>
-            <p className="inapp-gate__hint">{t.authInAppIosHint}</p>
-            <button
-              type="button"
-              className="inapp-gate__btn"
-              onClick={copyLink}
-            >
-              {copied ? t.authLinkCopied : t.authCopyLink}
-            </button>
-          </>
-        )}
-
+        {/* Primary CTA: open in a real browser */}
         <button
           type="button"
-          className="inapp-gate__dismiss"
-          onClick={() => setDismissed(true)}
+          className="inapp-gate__btn"
+          onClick={() => openInSystemBrowser()}
         >
-          {t.inAppGateDismiss}
+          {t.authOpenInBrowser}
+        </button>
+
+        {/* iOS can't be forced — show the manual steps under the button */}
+        {!isAndroid && (
+          <p className="inapp-gate__hint">{t.authInAppIosHint}</p>
+        )}
+
+        {/* Secondary fallback: copy the link to paste into a browser */}
+        <button
+          type="button"
+          className="inapp-gate__btn inapp-gate__btn--secondary"
+          onClick={copyLink}
+        >
+          {copied ? t.authLinkCopied : t.authCopyLink}
         </button>
       </div>
     </div>

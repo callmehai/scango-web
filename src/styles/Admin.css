@@ -266,6 +266,25 @@
   display: block;
 }
 
+/* Role / plan / sort controls under the search box */
+.admin-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.admin-filters > * {
+  flex: 1 1 160px;
+  min-width: 0;
+}
+
+/* Let the dropdown fill its Field column */
+.admin-filters .dropdown {
+  display: flex;
+  width: 100%;
+}
+
 /* ============================================================
    AdminUsers — table (desktop) / card list (mobile)
    ============================================================ */

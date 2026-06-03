@@ -128,6 +128,8 @@ export const UI_TEXT = {
         scanErrNotImage: "Vui lòng chọn file hình ảnh",
         scanErrTooLarge: "File quá lớn (tối đa 10MB)",
         scanErrSubmit: "Lỗi khi xử lý hình ảnh. Vui lòng thử lại.",
+        scanQuotaError:
+          "Bạn đã hết lượt quét tuần này. Quota sẽ reset vào đầu tuần sau.",
 
         // ===== HISTORY =====
         historyTitle: "Lịch sử chat",
@@ -206,6 +208,13 @@ export const UI_TEXT = {
         adminFreeScans: "Số lần quét / tuần",
         adminFreeAsks: "Số câu hỏi / tuần",
         adminSearchUser: "Tìm theo email hoặc tên...",
+        adminFilterRole: "Lọc theo vai trò",
+        adminFilterPlan: "Lọc theo gói",
+        adminSortBy: "Sắp xếp theo",
+        adminAll: "Tất cả",
+        adminSortEmail: "Email (A→Z)",
+        adminSortTokens: "Token (cao→thấp)",
+        adminSortConvos: "Hội thoại (cao→thấp)",
         adminColUser: "Người dùng",
         adminColRole: "Vai trò",
         adminColPlan: "Gói",
@@ -501,6 +510,8 @@ export const UI_TEXT = {
         scanErrNotImage: "Please select an image file",
         scanErrTooLarge: "File is too large (max 10MB)",
         scanErrSubmit: "Error while processing image. Please try again.",
+        scanQuotaError:
+          "You've used all your scans this week. Quota resets next week.",
 
         // ===== HISTORY =====
         historyTitle: "Chat history",
@@ -579,6 +590,13 @@ export const UI_TEXT = {
         adminFreeScans: "Scans / week",
         adminFreeAsks: "Chat questions / week",
         adminSearchUser: "Search by email or name...",
+        adminFilterRole: "Filter by role",
+        adminFilterPlan: "Filter by plan",
+        adminSortBy: "Sort by",
+        adminAll: "All",
+        adminSortEmail: "Email (A→Z)",
+        adminSortTokens: "Tokens (high→low)",
+        adminSortConvos: "Conversations (high→low)",
         adminColUser: "User",
         adminColRole: "Role",
         adminColPlan: "Plan",

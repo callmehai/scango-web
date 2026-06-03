@@ -32,6 +32,7 @@ export default function Logo({
       />
       {!iconOnly && (
         <span
+          className="sg-logo__word"
           style={{
             fontSize: Math.round(height * 0.55),
             fontWeight: 600,

@@ -84,6 +84,21 @@
   flex: 0 0 auto;
 }
 
+/* Phones: drop the "ScanGo" wordmark and tighten the controls so the back
+   button + centered logo + 4 controls fit without overlapping. */
+@media (max-width: 560px) {
+  .app-header__brand .sg-logo__word {
+    display: none;
+  }
+  .app-header__controls {
+    gap: var(--space-1);
+  }
+  .app-header .app-icon-btn {
+    width: 36px;
+    height: 36px;
+  }
+}
+
 /* ---- Page title (large heading at top of content for sub-pages) ---- */
 .app-page-title {
   margin: 0 0 var(--space-5);

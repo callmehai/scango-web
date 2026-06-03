@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
 import { UI_TEXT } from "../constants/uiText";
@@ -14,7 +14,10 @@ import {
   Spinner,
 } from "../components/ui";
 import type { BadgeVariant } from "../components/ui";
+import Dropdown from "../components/Dropdown";
 import api from "../api/axios";
+
+type SortBy = "email" | "tokens" | "convos";
 
 import "../styles/Admin.css";
 
@@ -54,8 +57,26 @@ export default function AdminUsers() {
   const [busyId, setBusyId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AdminUser | null>(null);
   const [plans, setPlans] = useState<{ code: string; name: string }[]>([]);
+  const [roleFilter, setRoleFilter] = useState<string>("all");
+  const [planFilter, setPlanFilter] = useState<string>("all");
+  const [sortBy, setSortBy] = useState<SortBy>("email");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Filter + sort happen client-side over the fetched page (server still does
+  // the text search via `q`). Keeps the table usable as the user list grows.
+  const visibleUsers = useMemo(() => {
+    const filtered = users.filter(
+      (u) =>
+        (roleFilter === "all" || u.role === roleFilter) &&
+        (planFilter === "all" || u.plan === planFilter),
+    );
+    return [...filtered].sort((a, b) => {
+      if (sortBy === "tokens") return b.totalTokens - a.totalTokens;
+      if (sortBy === "convos") return b.conversationCount - a.conversationCount;
+      return a.email.localeCompare(b.email);
+    });
+  }, [users, roleFilter, planFilter, sortBy]);
 
   const loadUsers = useCallback(async () => {
     const res = await api.get<{ items: AdminUser[] }>("/admin/users", {
@@ -154,7 +175,7 @@ export default function AdminUsers() {
         </div>
       )}
 
-      {/* Search */}
+      {/* Search + filters */}
       <Card padding="md" className="admin-toolbar">
         <Field label={t.adminSearchUser} htmlFor="admin-user-search">
           <Input
@@ -166,6 +187,47 @@ export default function AdminUsers() {
             leftIcon={<span aria-hidden="true">🔍</span>}
           />
         </Field>
+
+        <div className="admin-filters">
+          <Field label={t.adminFilterRole}>
+            <Dropdown<string>
+              value={roleFilter}
+              onChange={setRoleFilter}
+              ariaLabel={t.adminFilterRole}
+              options={[
+                { value: "all", label: t.adminAll },
+                { value: "user", label: "user" },
+                { value: "admin", label: "admin" },
+                { value: "tester", label: "tester" },
+              ]}
+            />
+          </Field>
+
+          <Field label={t.adminFilterPlan}>
+            <Dropdown<string>
+              value={planFilter}
+              onChange={setPlanFilter}
+              ariaLabel={t.adminFilterPlan}
+              options={[
+                { value: "all", label: t.adminAll },
+                ...plans.map((p) => ({ value: p.code, label: p.name })),
+              ]}
+            />
+          </Field>
+
+          <Field label={t.adminSortBy}>
+            <Dropdown<string>
+              value={sortBy}
+              onChange={(v) => setSortBy(v as SortBy)}
+              ariaLabel={t.adminSortBy}
+              options={[
+                { value: "email", label: t.adminSortEmail },
+                { value: "tokens", label: t.adminSortTokens },
+                { value: "convos", label: t.adminSortConvos },
+              ]}
+            />
+          </Field>
+        </div>
       </Card>
 
       {/* Content states */}
@@ -175,7 +237,7 @@ export default function AdminUsers() {
         </div>
       ) : error ? (
         <ErrorState message={error} onRetry={reload} retryLabel={t.commonRetry} />
-      ) : users.length === 0 ? (
+      ) : visibleUsers.length === 0 ? (
         <EmptyState icon="🔍" title={t.adminUsersEmpty} />
       ) : (
         <Card padding="none" className="admin-table-card">
@@ -197,7 +259,7 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody>
-                {users.map((u) => (
+                {visibleUsers.map((u) => (
                   <tr key={u.id}>
                     <td data-label={t.adminColUser}>
                       <div className="admin-user">

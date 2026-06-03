@@ -60,7 +60,10 @@ function AppRoutes() {
         path="/conversations/:id"
         element={
           <ProtectedRoute>
-            <AppLayout titleKey="conversationTitle" showBack>
+            {/* No generic "Hội thoại" page title — the conversation's own title
+                (in conversation-topbar) is the heading, so the duplicate big h1
+                above it just made the top heavy. */}
+            <AppLayout showBack>
               <Conversation />
             </AppLayout>
           </ProtectedRoute>

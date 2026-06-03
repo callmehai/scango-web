@@ -60,6 +60,13 @@ export const UI_TEXT = {
         authRegisterGenericError: "Đăng ký thất bại. Vui lòng thử lại.",
         authLogout: "Đăng xuất",
         authVerifyEmailHint: "Email của bạn chưa được xác minh. Kiểm tra hộp thư để kích hoạt tài khoản.",
+        authInAppNotice:
+          "Bạn đang mở trong ứng dụng khác nên đăng nhập Google có thể bị chặn. Hãy mở bằng trình duyệt (Chrome/Safari), hoặc dùng email + mật khẩu bên dưới.",
+        authOpenInBrowser: "Mở trong trình duyệt",
+        authInAppIosHint:
+          "Bấm nút chia sẻ hoặc “•••” ở góc màn hình, rồi chọn “Mở trong Safari/Chrome”.",
+        authCopyLink: "Sao chép liên kết",
+        authLinkCopied: "Đã sao chép liên kết",
 
         infoTitle: "Thông tin",
         appDesc: "Ứng dụng trợ lý AI dành cho du khách",
@@ -406,6 +413,13 @@ export const UI_TEXT = {
         authRegisterGenericError: "Sign up failed. Please try again.",
         authLogout: "Sign out",
         authVerifyEmailHint: "Your email isn't verified yet. Check your inbox to activate.",
+        authInAppNotice:
+          "You're inside another app, so Google sign-in may be blocked. Open this page in a browser (Chrome/Safari), or use email + password below.",
+        authOpenInBrowser: "Open in browser",
+        authInAppIosHint:
+          "Tap the share or “•••” menu in the corner, then choose “Open in Safari/Chrome”.",
+        authCopyLink: "Copy link",
+        authLinkCopied: "Link copied",
 
         infoTitle: "Information",
         appDesc: "AI assistant application for travelers",

@@ -3,6 +3,10 @@ import axios, { AxiosError, type InternalAxiosRequestConfig } from "axios";
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL ?? "http://localhost:5126/api",
   withCredentials: false,
+  // Don't let a slow/overloaded backend hang the UI forever (e.g. the scan
+  // "Đang xử lý…" spinner). 30s is generous for our REST calls; the SSE scan
+  // stream uses fetch() directly and is not affected by this.
+  timeout: 30_000,
 });
 
 // ----- Token storage helpers (localStorage) -----

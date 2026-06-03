@@ -1,4 +1,4 @@
-import { useEffect, useState, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
 import { UI_TEXT } from "../constants/uiText";
@@ -7,12 +7,15 @@ import {
   Badge,
   Button,
   Card,
+  Input,
   ProgressBar,
   Skeleton,
   useToast,
 } from "../components/ui";
 
 import "../styles/Profile.css";
+
+const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 interface Usage {
   limited: boolean;
@@ -34,7 +37,7 @@ function Row({ label, value }: { label: ReactNode; value: ReactNode }) {
 
 export default function Profile() {
   const { systemLang } = useSettings();
-  const { user } = useAuth();
+  const { user, refreshMe } = useAuth();
   const t = UI_TEXT[systemLang];
   const toast = useToast();
 
@@ -43,6 +46,18 @@ export default function Profile() {
   const [resending, setResending] = useState(false);
   const [resent, setResent] = useState(false);
 
+  // ----- name editing -----
+  const [editingName, setEditingName] = useState(false);
+  const [nameDraft, setNameDraft] = useState("");
+  const [savingName, setSavingName] = useState(false);
+
+  // ----- avatar -----
+  const hasAvatar = user?.hasAvatar ?? false;
+  const fileRef = useRef<HTMLInputElement>(null);
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
+  const [avatarVersion, setAvatarVersion] = useState(0);
+  const [avatarBusy, setAvatarBusy] = useState(false);
+
   useEffect(() => {
     api
       .get<Usage>("/me/usage")
@@ -50,7 +65,95 @@ export default function Profile() {
       .catch(() => setUsageError(true));
   }, []);
 
+  // The avatar endpoint is authenticated, so an <img src> can't carry the
+  // bearer token — fetch it as a blob and hand the <img> an object URL.
+  useEffect(() => {
+    if (!hasAvatar) {
+      setAvatarUrl(null);
+      return;
+    }
+    let cancelled = false;
+    let objUrl: string | null = null;
+    api
+      .get("/me/avatar", { responseType: "blob" })
+      .then((res) => {
+        if (cancelled) return;
+        objUrl = URL.createObjectURL(res.data as Blob);
+        setAvatarUrl(objUrl);
+      })
+      .catch(() => !cancelled && setAvatarUrl(null));
+    return () => {
+      cancelled = true;
+      if (objUrl) URL.revokeObjectURL(objUrl);
+    };
+  }, [hasAvatar, avatarVersion]);
+
   if (!user) return null; // ProtectedRoute guarantees a user
+
+  const startEditName = () => {
+    setNameDraft(user.name || "");
+    setEditingName(true);
+  };
+
+  const saveName = async () => {
+    const next = nameDraft.trim();
+    if (!next || next === user.name) {
+      setEditingName(false);
+      return;
+    }
+    setSavingName(true);
+    try {
+      await api.patch("/me", { name: next });
+      await refreshMe();
+      toast.success(t.profileNameSaved);
+      setEditingName(false);
+    } catch {
+      toast.error(t.profileNameError);
+    } finally {
+      setSavingName(false);
+    }
+  };
+
+  const onAvatarFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    e.target.value = ""; // allow re-picking the same file
+    if (!f) return;
+    if (!f.type.startsWith("image/")) {
+      toast.error(t.profileAvatarNotImage);
+      return;
+    }
+    if (f.size > MAX_AVATAR_BYTES) {
+      toast.error(t.profileAvatarTooLarge);
+      return;
+    }
+    setAvatarBusy(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", f);
+      await api.post("/me/avatar", fd);
+      await refreshMe();
+      setAvatarVersion((v) => v + 1); // force re-fetch even if hasAvatar already true
+      toast.success(t.profileAvatarSaved);
+    } catch {
+      toast.error(t.profileAvatarError);
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
+
+  const removeAvatar = async () => {
+    setAvatarBusy(true);
+    try {
+      await api.delete("/me/avatar");
+      await refreshMe();
+      setAvatarUrl(null);
+      toast.success(t.profileAvatarRemoved);
+    } catch {
+      toast.error(t.profileAvatarError);
+    } finally {
+      setAvatarBusy(false);
+    }
+  };
 
   const resendVerify = async () => {
     setResending(true);
@@ -83,11 +186,97 @@ export default function Profile() {
       {/* Identity */}
       <Card padding="lg">
         <div className="profile__identity">
-          <div className="profile__avatar" aria-hidden="true">
-            {initial}
+          <div className="profile__avatar-wrap">
+            <button
+              type="button"
+              className="profile__avatar"
+              onClick={() => fileRef.current?.click()}
+              disabled={avatarBusy}
+              aria-label={t.profileChangeAvatar}
+              title={t.profileChangeAvatar}
+            >
+              {avatarUrl ? (
+                <img
+                  src={avatarUrl}
+                  alt=""
+                  className="profile__avatar-img"
+                />
+              ) : (
+                <span aria-hidden="true">{initial}</span>
+              )}
+              <span className="profile__avatar-overlay" aria-hidden="true">
+                ✎
+              </span>
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/*"
+              hidden
+              onChange={onAvatarFile}
+            />
+            <div className="profile__avatar-actions">
+              <button
+                type="button"
+                className="profile__link-btn"
+                onClick={() => fileRef.current?.click()}
+                disabled={avatarBusy}
+              >
+                {t.profileChangeAvatar}
+              </button>
+              {hasAvatar && (
+                <button
+                  type="button"
+                  className="profile__link-btn profile__link-btn--danger"
+                  onClick={removeAvatar}
+                  disabled={avatarBusy}
+                >
+                  {t.profileRemoveAvatar}
+                </button>
+              )}
+            </div>
           </div>
           <div className="profile__identity-main">
-            <h2 className="profile__name">{user.name || user.email}</h2>
+            {editingName ? (
+              <div className="profile__name-edit">
+                <Input
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  maxLength={100}
+                  autoFocus
+                  aria-label={t.profileName}
+                />
+                <div className="profile__name-actions">
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    loading={savingName}
+                    onClick={saveName}
+                  >
+                    {t.profileSave}
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    disabled={savingName}
+                    onClick={() => setEditingName(false)}
+                  >
+                    {t.profileCancel}
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="profile__name-row">
+                <h2 className="profile__name">{user.name || user.email}</h2>
+                <button
+                  type="button"
+                  className="profile__link-btn"
+                  onClick={startEditName}
+                >
+                  {t.profileEdit}
+                </button>
+              </div>
+            )}
             <p className="profile__email">{user.email}</p>
             <div className="profile__badges">
               <Badge variant={isPaid ? "primary" : "neutral"}>

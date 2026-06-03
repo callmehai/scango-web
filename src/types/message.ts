@@ -15,5 +15,6 @@ export interface User {
   plan: string;
   status: "active" | "suspended" | "deleted";
   emailVerified: boolean;
+  hasAvatar: boolean;
   createdAt: string;
 }

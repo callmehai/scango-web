@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
+import { useAuth } from "../hooks/useAuth";
 import { UI_TEXT } from "../constants/uiText";
 import { Card, ErrorState, Field, Spinner, useToast } from "../components/ui";
 import api from "../api/axios";
@@ -43,8 +44,11 @@ function Switch({
 
 export default function AdminSettings() {
   const { systemLang } = useSettings();
+  const { user } = useAuth();
   const t = UI_TEXT[systemLang];
   const toast = useToast();
+  // Testers can view this page but not change anything.
+  const canManage = user?.role === "admin";
 
   const [config, setConfig] = useState<AdminConfig | null>(null);
   const [saving, setSaving] = useState(false);
@@ -66,7 +70,7 @@ export default function AdminSettings() {
   const patch = async (
     body: Partial<Pick<AdminConfig, "geminiModel" | "aiMock" | "ocrMock">>,
   ) => {
-    if (!config) return;
+    if (!config || !canManage) return;
     const prev = config;
     setConfig({ ...config, ...body }); // optimistic
     setSaving(true);
@@ -133,7 +137,7 @@ export default function AdminSettings() {
               aria-describedby={describedBy}
               className="admin-select"
               value={config.geminiModel}
-              disabled={saving}
+              disabled={saving || !canManage}
               aria-label={t.adminModelLabel}
               onChange={(e) => patch({ geminiModel: e.target.value })}
             >
@@ -156,7 +160,7 @@ export default function AdminSettings() {
             checked={config.aiMock}
             onChange={(v) => patch({ aiMock: v })}
             ariaLabel={t.adminAiMockLabel}
-            disabled={saving}
+            disabled={saving || !canManage}
           />
         </div>
 
@@ -170,7 +174,7 @@ export default function AdminSettings() {
             checked={config.ocrMock}
             onChange={(v) => patch({ ocrMock: v })}
             ariaLabel={t.adminOcrMockLabel}
-            disabled={saving}
+            disabled={saving || !canManage}
           />
         </div>
 

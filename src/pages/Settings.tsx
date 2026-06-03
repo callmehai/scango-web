@@ -49,13 +49,8 @@ const PLANS = [
     duration: "plansDuration365",
     limitKey: "plansLimitPro",
   },
-  {
-    code: "unlimited",
-    name: "Unlimited",
-    price: "—",
-    duration: "plansInternal",
-    limitKey: "plansLimitUnlimited",
-  },
+  // "Unlimited" is an internal-only ceiling (staff get unlimited via role), not
+  // a real plan — keep it out of the user-facing pricing list.
 ] as const;
 
 export default function Settings() {
@@ -172,8 +167,8 @@ export default function Settings() {
         </Card>
       </section>
 
-      {/* Admin — only visible to admins */}
-      {user?.role === "admin" && (
+      {/* Admin — visible to admin + tester (tester sees a read-only view) */}
+      {(user?.role === "admin" || user?.role === "tester") && (
         <section className="settings__section">
           <h2 className="settings__section-title">{t.adminTitle}</h2>
           <Card padding="md">

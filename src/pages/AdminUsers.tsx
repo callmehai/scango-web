@@ -50,6 +50,8 @@ export default function AdminUsers() {
   const { systemLang } = useSettings();
   const { user: me } = useAuth();
   const t = UI_TEXT[systemLang];
+  // Testers get the full read-only view; only admins can mutate users.
+  const canManage = me?.role === "admin";
 
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [metrics, setMetrics] = useState<Metrics | null>(null);
@@ -253,9 +255,11 @@ export default function AdminUsers() {
                   <th>{t.adminColTokens}</th>
                   <th>{t.adminColQuota}</th>
                   <th>{t.adminColStatus}</th>
-                  <th className="admin-table__actions-col">
-                    {t.adminColActions}
-                  </th>
+                  {canManage && (
+                    <th className="admin-table__actions-col">
+                      {t.adminColActions}
+                    </th>
+                  )}
                 </tr>
               </thead>
               <tbody>
@@ -268,7 +272,7 @@ export default function AdminUsers() {
                       </div>
                     </td>
                     <td data-label={t.adminColRole}>
-                      {me?.id === u.id ? (
+                      {!canManage || me?.id === u.id ? (
                         <Badge variant="primary">{u.role}</Badge>
                       ) : (
                         <select
@@ -285,7 +289,7 @@ export default function AdminUsers() {
                       )}
                     </td>
                     <td data-label={t.adminColPlan}>
-                      {plans.length > 0 ? (
+                      {canManage && plans.length > 0 ? (
                         <select
                           className="admin-select admin-select--sm"
                           value={u.plan}
@@ -330,6 +334,7 @@ export default function AdminUsers() {
                         {u.status}
                       </Badge>
                     </td>
+                    {canManage && (
                     <td
                       data-label={t.adminColActions}
                       className="admin-table__actions-col"
@@ -366,6 +371,7 @@ export default function AdminUsers() {
                         </Button>
                       </div>
                     </td>
+                    )}
                   </tr>
                 ))}
               </tbody>

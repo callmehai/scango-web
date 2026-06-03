@@ -233,6 +233,11 @@
   align-items: center;
   gap: var(--space-4);
   width: 100%;
+  /* Grid/flex items default to min-width:auto, so the nowrap desc made each
+     card grow to its text width — different sizes + overflow. Let them shrink
+     to the track so all three are equal and never spill past the screen. */
+  min-width: 0;
+  height: 100%;
   text-align: left;
   font: inherit;
   color: var(--color-text);

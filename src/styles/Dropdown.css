@@ -120,6 +120,16 @@
 
 .dropdown__search:focus-within {
   border-color: var(--color-primary);
+  box-shadow: none;
+}
+
+/* The panel auto-focuses this input on open; the global :focus-visible rule
+   then paints an offset indigo outline that reads as a faint blue box behind
+   the field. The wrapper border above is the focus cue, so kill the outline. */
+.dropdown__search-input:focus,
+.dropdown__search-input:focus-visible {
+  outline: none;
+  box-shadow: none;
 }
 
 .dropdown__search-icon {
@@ -132,6 +142,12 @@
   min-width: 0;
   border: none;
   outline: none;
+  /* iOS Safari/WebView paints a default inner box/shadow on text inputs —
+     strip native chrome so no stray light-blue box shows behind the field. */
+  -webkit-appearance: none;
+  appearance: none;
+  box-shadow: none;
+  border-radius: 0;
   background: transparent;
   padding: 8px 0;
   font-size: 14px;

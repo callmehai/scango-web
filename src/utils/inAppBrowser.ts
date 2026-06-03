@@ -41,7 +41,9 @@ export function getMobilePlatform(): MobilePlatform {
  * Returns true if an escape was attempted.
  */
 export function openInSystemBrowser(targetUrl = window.location.href): boolean {
-  if (getMobilePlatform() === "android") {
+  const platform = getMobilePlatform();
+
+  if (platform === "android") {
     const stripped = targetUrl.replace(/^https?:\/\//, "");
     // host+path go before #Intent; scheme/package live in the fragment.
     window.location.href =
@@ -49,9 +51,18 @@ export function openInSystemBrowser(targetUrl = window.location.href): boolean {
       `package=com.android.chrome;end`;
     return true;
   }
-  // iOS / other: WebViews can't be forced to Safari from script, but many
-  // in-app browsers hand a window.open() off to the system browser. Best-effort
-  // — the on-screen hint still covers the manual "••• → Open in Safari" path.
+
+  if (platform === "ios") {
+    // iOS WebViews can't be forced to Safari from script (window.open just
+    // reloads inside the WebView). The Chrome app registers a URL scheme,
+    // so deep-link into it: opens Chrome if installed, otherwise nothing
+    // happens and the on-screen "••• → Open in Safari" hint is the fallback.
+    window.location.href = targetUrl
+      .replace(/^https:\/\//, "googlechromes://")
+      .replace(/^http:\/\//, "googlechrome://");
+    return true;
+  }
+
   window.open(targetUrl, "_blank", "noopener");
   return true;
 }

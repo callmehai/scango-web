@@ -43,10 +43,6 @@ export default function InAppBrowserGate() {
       <div className="inapp-gate__card">
         <Logo height={56} iconOnly className="inapp-gate__logo" />
         <h1 className="inapp-gate__title">{t.inAppGateTitle}</h1>
-        <p className="inapp-gate__body">
-          {app !== "WebView" && <strong>{app} · </strong>}
-          {t.inAppGateBody}
-        </p>
 
         {/* Primary CTA: open in a real browser */}
         <button

@@ -666,30 +666,32 @@ export default function Conversation() {
         )}
 
         <div className="conversation-input-row">
-          <div className="conversation-input-wrap">
-            <Textarea
-              ref={inputRef}
-              className="conversation-textarea"
-              value={input}
-              onChange={(e) => setInputClamped(e.target.value)}
-              onKeyDown={handleKeyDown}
-              placeholder={t.convInputPlaceholder}
-              aria-label={t.convInputAria}
-              maxLength={MAX_QUESTION_CHARS}
-              rows={2}
-              disabled={loading}
-            />
+          <Textarea
+            ref={inputRef}
+            className="conversation-textarea"
+            value={input}
+            onChange={(e) => setInputClamped(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t.convInputPlaceholder}
+            aria-label={t.convInputAria}
+            maxLength={MAX_QUESTION_CHARS}
+            rows={2}
+            disabled={loading}
+          />
+          {/* Expand + send grouped in one bottom-right cluster, same size.
+              Send is a bare ↑ arrow (no "Gửi" text — universally understood). */}
+          <div className="conversation-input-actions">
             <button
               type="button"
-              className="conversation-expand-btn"
+              className="conversation-icon-btn conversation-expand-btn"
               onClick={() => setComposeOpen(true)}
               aria-label={t.convExpandAria}
               title={t.convExpandAria}
               disabled={loading}
             >
               <svg
-                width="16"
-                height="16"
+                width="18"
+                height="18"
                 viewBox="0 0 24 24"
                 fill="none"
                 stroke="currentColor"
@@ -701,28 +703,49 @@ export default function Conversation() {
                 <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7" />
               </svg>
             </button>
+            {loading ? (
+              <button
+                type="button"
+                className="conversation-icon-btn conversation-send-btn conversation-send-btn--stop"
+                onClick={handleStop}
+                aria-label={t.convStopAria}
+                title={t.convStopAria}
+              >
+                <svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="currentColor"
+                  aria-hidden="true"
+                >
+                  <rect x="6" y="6" width="12" height="12" rx="2" />
+                </svg>
+              </button>
+            ) : (
+              <button
+                type="button"
+                className="conversation-icon-btn conversation-send-btn"
+                onClick={sendStream}
+                disabled={!input.trim() || quotaReached}
+                aria-label={t.convSendAria}
+                title={t.convSendAria}
+              >
+                <svg
+                  width="18"
+                  height="18"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                >
+                  <path d="M12 19V5M5 12l7-7 7 7" />
+                </svg>
+              </button>
+            )}
           </div>
-          {loading ? (
-            <Button
-              type="button"
-              variant="danger"
-              className="conversation-action-btn"
-              onClick={handleStop}
-              aria-label={t.convStopAria}
-            >
-              {t.convBtnStopText}
-            </Button>
-          ) : (
-            <Button
-              type="button"
-              className="conversation-action-btn"
-              onClick={sendStream}
-              disabled={!input.trim() || quotaReached}
-              aria-label={t.convSendAria}
-            >
-              {t.convBtnSendText}
-            </Button>
-          )}
         </div>
 
         <div

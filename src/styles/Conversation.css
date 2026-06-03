@@ -480,57 +480,124 @@
 
 .conversation-input-row {
   display: flex;
-  align-items: flex-end;
+  /* stretch so the textarea and the vertical action cluster share one height */
+  align-items: stretch;
   gap: var(--space-2);
   width: 100%;
+  /* One unified rounded field holding the textarea + action buttons. The row
+     owns the border + focus ring. Field uses surface-sunken (inset) so it reads
+     distinct from the composer's surface bg in BOTH themes — bg-secondary equals
+     surface in dark (#1a1a1a) and would vanish. */
+  padding: var(--space-2);
+  background: var(--color-surface-sunken);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  transition: border-color var(--transition-base),
+    box-shadow var(--transition-base);
 }
 
-/* textarea + expand button share one rounded field */
-.conversation-input-wrap {
-  position: relative;
-  flex: 1;
-  min-width: 0;
+.conversation-input-row:focus-within {
+  border-color: var(--color-focus-border);
+  box-shadow: 0 0 0 3px var(--color-focus-ring);
 }
 
 .conversation-textarea {
-  width: 100%;
+  flex: 1;
+  min-width: 0;
   /* roomier: ~2 lines min, grows up to ~8 lines then scrolls */
-  min-height: 56px;
-  max-height: 220px;
-  padding-right: var(--space-8); /* room for the expand button */
+  min-height: 52px;
+  max-height: 200px;
   resize: none;
 }
 
-.conversation-expand-btn {
-  position: absolute;
-  top: var(--space-2);
-  right: var(--space-2);
-  width: 28px;
-  height: 28px;
+/* Blend the textarea into the unified field — strip its own border/background
+   and focus ring (the row carries them). */
+.conversation-input-row .conversation-textarea {
+  padding: var(--space-2);
+  border: none;
+  background: transparent;
+}
+
+.conversation-input-row .conversation-textarea:focus,
+.conversation-input-row .conversation-textarea:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* expand + send stacked in one tidy vertical column at the right edge:
+   expand on top, send on the bottom (matches the reference composer) */
+.conversation-input-actions {
+  flex-shrink: 0;
+  align-self: stretch;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+/* shared base — expand and send are the SAME size */
+.conversation-icon-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
   border: none;
-  border-radius: var(--radius-sm);
-  background: var(--color-surface-hover);
-  color: var(--color-text-secondary);
+  border-radius: var(--radius-full);
   cursor: pointer;
-  transition: background var(--transition-fast), color var(--transition-fast);
+  transition: background var(--transition-fast), color var(--transition-fast),
+    opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.conversation-icon-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+/* expand — transparent fill (ghost). Keeps a 1px border so it still reads as a
+   button on the field instead of blending into the background. */
+.conversation-expand-btn {
+  background: transparent;
+  border: 1px solid var(--color-border);
+  color: var(--color-text-secondary);
 }
 
 .conversation-expand-btn:hover:not(:disabled) {
-  background: var(--color-primary-subtle);
-  color: var(--color-primary);
+  background: var(--color-surface-hover);
+  border-color: var(--color-border-strong);
+  color: var(--color-text);
 }
 
 .conversation-expand-btn:disabled {
-  opacity: 0.5;
+  opacity: 0.4;
   cursor: not-allowed;
 }
 
-.conversation-action-btn {
-  flex-shrink: 0;
-  align-self: stretch;
+/* send — filled primary arrow (high contrast on the field in both themes) */
+.conversation-send-btn {
+  background: var(--color-primary);
+  color: var(--color-text-on-primary);
+}
+
+.conversation-send-btn:hover:not(:disabled) {
+  background: var(--color-primary-hover);
+}
+
+/* faded primary when disabled — NOT a neutral grey that could blend into the
+   inset field bg */
+.conversation-send-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.conversation-send-btn--stop {
+  background: var(--color-danger);
+  color: #ffffff;
+}
+
+.conversation-send-btn--stop:hover:not(:disabled) {
+  filter: brightness(1.06);
 }
 
 /* character counter under the composer */
@@ -611,10 +678,5 @@
 
   .conversation-bubble {
     font-size: var(--text-sm);
-  }
-
-  .conversation-action-btn {
-    padding-left: var(--space-3);
-    padding-right: var(--space-3);
   }
 }

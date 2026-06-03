@@ -19,6 +19,8 @@ import {
 import "../styles/Profile.css";
 
 const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+// Keep in sync with backend UpdateProfileRequest: [StringLength(100, MinimumLength = 1)]
+const MAX_NAME_CHARS = 100;
 
 interface Usage {
   limited: boolean;
@@ -303,19 +305,24 @@ export default function Profile() {
             />
           </div>
 
-          <Field label={t.profileName}>
-            {({ id, describedBy, invalid }) => (
-              <Input
-                id={id}
-                aria-describedby={describedBy}
-                invalid={invalid}
-                value={nameDraft}
-                onChange={(e) => setNameDraft(e.target.value)}
-                maxLength={100}
-                autoFocus
-              />
-            )}
-          </Field>
+          <div className="profile-edit__name">
+            <Field label={t.profileName}>
+              {({ id, describedBy, invalid }) => (
+                <Input
+                  id={id}
+                  aria-describedby={describedBy}
+                  invalid={invalid}
+                  value={nameDraft}
+                  onChange={(e) => setNameDraft(e.target.value)}
+                  maxLength={MAX_NAME_CHARS}
+                  autoFocus
+                />
+              )}
+            </Field>
+            <div className="profile-edit__charcount" aria-live="polite">
+              {nameDraft.length}/{MAX_NAME_CHARS}
+            </div>
+          </div>
         </div>
       </Modal>
 

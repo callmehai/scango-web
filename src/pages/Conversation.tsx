@@ -25,6 +25,8 @@ import "katex/dist/katex.min.css";
 
 // Keep in sync with backend AskRequest: [StringLength(4000, MinimumLength = 1)]
 const MAX_QUESTION_CHARS = 4000;
+// Keep in sync with backend RenameConversationRequest: [StringLength(200, MinimumLength = 1)]
+const MAX_TITLE_CHARS = 200;
 
 async function consumeSseStream(
   reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -850,6 +852,7 @@ export default function Conversation() {
               value={renameData?.title ?? ""}
               onChange={(e) => setRenameData({ title: e.target.value })}
               placeholder={t.convRenamePlaceholder}
+              maxLength={MAX_TITLE_CHARS}
               autoFocus
               onKeyDown={(e) => {
                 if (e.key === "Enter") handleRename();
@@ -857,6 +860,9 @@ export default function Conversation() {
             />
           )}
         </Field>
+        <div className="conversation-charcount" aria-live="polite">
+          {renameData?.title.length ?? 0}/{MAX_TITLE_CHARS}
+        </div>
       </Modal>
 
       {/* Delete confirm */}

@@ -56,6 +56,15 @@
   flex-shrink: 0;
 }
 
+/* Equal-height toolbar controls. Search input (~50px), topic dropdown (~40px)
+   and the view toggle were three different heights. The toggle is intrinsically
+   46px (36px buttons + space-1 padding + 1px border); pin the other two to it so
+   the row lines up cleanly. Scoped (two classes) to beat the primitive defaults. */
+.history__search .sg-input,
+.history__toolbar-right .dropdown__trigger {
+  height: 46px;
+}
+
 /* View toggle (grid/list segmented control) */
 .history__view-toggle {
   display: inline-flex;

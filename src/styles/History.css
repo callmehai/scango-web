@@ -134,6 +134,12 @@
 .history__card {
   position: relative;
   overflow: visible; /* let ActionMenu panel escape the card bounds */
+  /* Grid items default to min-width:auto, so the nowrap title forced the card
+     (and its track) wider than the viewport. Let it shrink so the title can
+     ellipsis instead of spilling off-screen. overflow stays visible for the
+     ActionMenu, which only sets the auto-minimum to min-content, not 0 —
+     hence the explicit min-width:0. */
+  min-width: 0;
 }
 
 /* Lift a card hosting an open ActionMenu above siblings so the floating panel
@@ -355,7 +361,11 @@
   }
 
   .history__list--grid {
-    grid-template-columns: 1fr;
+    /* minmax(0, 1fr) — NOT plain 1fr (= minmax(auto, 1fr)). The `auto` minimum
+       grows the single column to the nowrap title's width and spills past the
+       screen edge on phones; pinning the minimum to 0 keeps it within the
+       viewport so the title truncates. */
+    grid-template-columns: minmax(0, 1fr);
   }
 
   /* Stack pagination: controls on top, summary + size below, all centered */

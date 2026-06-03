@@ -408,6 +408,21 @@
   border-radius: var(--radius-sm);
 }
 
+/* ===== Math (KaTeX) ===== */
+/* Display formulas can be wider than the bubble; scroll instead of overflowing. */
+.conversation-bubble__md .katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  margin: var(--space-3) 0;
+  padding-bottom: var(--space-1);
+}
+
+/* Inline math should not force the bubble wider than its max width. */
+.conversation-bubble__md .katex {
+  font-size: 1.05em;
+  white-space: normal;
+}
+
 /* ===== Image preview (inside Modal) ===== */
 .conversation-preview-img {
   display: block;

@@ -19,6 +19,9 @@ import {
 } from "../components/ui";
 import "../styles/Conversation.css";
 import ReactMarkdown from "react-markdown";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 
 // Keep in sync with backend AskRequest: [StringLength(4000, MinimumLength = 1)]
 const MAX_QUESTION_CHARS = 4000;
@@ -420,6 +423,22 @@ export default function Conversation() {
   const stripTitleLine = (text: string) =>
     text.replace(/^\s*TITLE:.*(?:\r?\n)+/i, "");
 
+  // Gemini emits LaTeX with \( \) / \[ \] delimiters as often as $ / $$, but
+  // remark-math only understands the dollar form. Normalize the backslash
+  // delimiters to dollars so formulas render, while leaving fenced/inline code
+  // untouched (those segments sit at the odd indices of the split).
+  const normalizeMath = (text: string): string =>
+    text
+      .split(/(```[\s\S]*?```|`[^`]*`)/g)
+      .map((seg, i) =>
+        i % 2 === 1
+          ? seg
+          : seg
+              .replace(/\\\[([\s\S]+?)\\\]/g, (_m, body) => `$$${body}$$`)
+              .replace(/\\\(([\s\S]+?)\\\)/g, (_m, body) => `$${body}$`),
+      )
+      .join("");
+
   // Whether the last assistant message is the one currently being streamed.
   const lastIndex = visibleMessages.length - 1;
   const isThreadEmpty =
@@ -569,8 +588,13 @@ export default function Conversation() {
                         </div>
                       ) : m.role === "assistant" ? (
                         <div className="conversation-bubble__md">
-                          <ReactMarkdown>
-                            {stripTitleLine(m.content)}
+                          <ReactMarkdown
+                            remarkPlugins={[remarkMath]}
+                            rehypePlugins={[
+                              [rehypeKatex, { throwOnError: false }],
+                            ]}
+                          >
+                            {normalizeMath(stripTitleLine(m.content))}
                           </ReactMarkdown>
                           {isStreamingBubble && m.content !== "" && (
                             <span

@@ -1,5 +1,4 @@
 import { useState } from "react";
-import { useSettings } from "../hooks/useSettings";
 import { UI_TEXT } from "../constants/uiText";
 import Logo from "./Logo";
 import {
@@ -17,8 +16,15 @@ import "../styles/InAppBrowserGate.css";
  * forced, so we show instructions + a copy-link fallback.
  */
 export default function InAppBrowserGate() {
-  const { systemLang } = useSettings();
-  const t = UI_TEXT[systemLang];
+  // The gate appears before the user can pick a language (and the app default
+  // is Vietnamese), so a foreigner would see Vietnamese. Key it off the device
+  // language instead: Vietnamese devices get vi, everyone else falls back to en.
+  const gateLang: "vi" | "en" =
+    typeof navigator !== "undefined" &&
+    navigator.language?.toLowerCase().startsWith("vi")
+      ? "vi"
+      : "en";
+  const t = UI_TEXT[gateLang];
   const [copied, setCopied] = useState(false);
 
   const app = detectInAppBrowser();

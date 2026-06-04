@@ -78,3 +78,38 @@ export const LANGUAGE_MAP: Record<
     ukr: { label: "Ukrainian (Українська)", flag: "🇺🇦", engine2Supported: true },
     vnm: { label: "Vietnamese (Tiếng Việt)", flag: "🇻🇳", engine2Supported: true },
 };
+
+// Map our 3-letter target codes to BCP-47 tags for the Web Speech API, so the
+// read-aloud voice matches whatever language the AI actually translated into
+// (the app is multi-language). "auto" has no fixed output language → caller
+// falls back to the UI language.
+export const SPEECH_LANG: Record<TargetLanguage, string> = {
+    ara: "ar-SA",
+    bul: "bg-BG",
+    chs: "zh-CN",
+    cht: "zh-TW",
+    hrv: "hr-HR",
+    cze: "cs-CZ",
+    dan: "da-DK",
+    dut: "nl-NL",
+    eng: "en-US",
+    fin: "fi-FI",
+    fre: "fr-FR",
+    ger: "de-DE",
+    gre: "el-GR",
+    hun: "hu-HU",
+    kor: "ko-KR",
+    ita: "it-IT",
+    jpn: "ja-JP",
+    pol: "pl-PL",
+    por: "pt-PT",
+    rus: "ru-RU",
+    slv: "sl-SI",
+    spa: "es-ES",
+    swe: "sv-SE",
+    tha: "th-TH",
+    tur: "tr-TR",
+    ukr: "uk-UA",
+    vnm: "vi-VN",
+    auto: "",
+};

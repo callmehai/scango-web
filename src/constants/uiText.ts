@@ -194,6 +194,9 @@ export const UI_TEXT = {
         adminAiMockDesc: "Bật = trả lời giả lập (không gọi Gemini, không tốn quota)",
         adminOcrMockLabel: "Mock OCR",
         adminOcrMockDesc: "Bật = OCR giả lập (không gọi OCR.Space)",
+        adminTtsLabel: "Đọc bằng giọng Google (TTS)",
+        adminTtsDesc:
+          "Bật = giọng Google tự nhiên; Tắt = giọng mặc định của trình duyệt",
         adminSaving: "Đang lưu...",
         adminSaved: "Đã lưu ✓",
         adminLoadError: "Không tải được cấu hình",
@@ -302,6 +305,9 @@ export const UI_TEXT = {
 
         convSendAria: "Gửi tin nhắn",
         convStopAria: "Dừng sinh câu trả lời",
+        convSpeakAria: "Đọc to câu trả lời",
+        convStopSpeakAria: "Dừng đọc",
+        convSpeakUnsupported: "Trình duyệt không hỗ trợ đọc văn bản",
 
         convBtnSendText: "Gửi",
         convBtnStopText: "Dừng",
@@ -576,6 +582,9 @@ export const UI_TEXT = {
         adminAiMockDesc: "On = canned responses (no Gemini call, no quota)",
         adminOcrMockLabel: "Mock OCR",
         adminOcrMockDesc: "On = canned OCR (no OCR.Space call)",
+        adminTtsLabel: "Read aloud with Google voice (TTS)",
+        adminTtsDesc:
+          "On = natural Google voice; Off = the browser's default voice",
         adminSaving: "Saving...",
         adminSaved: "Saved ✓",
         adminLoadError: "Failed to load settings",
@@ -684,6 +693,9 @@ export const UI_TEXT = {
 
         convSendAria: "Send message",
         convStopAria: "Stop generating",
+        convSpeakAria: "Read answer aloud",
+        convStopSpeakAria: "Stop reading",
+        convSpeakUnsupported: "Your browser doesn't support text-to-speech",
 
         convBtnSendText: "Send",
         convBtnStopText: "Stop",

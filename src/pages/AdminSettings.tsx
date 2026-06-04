@@ -12,6 +12,7 @@ interface AdminConfig {
   geminiModel: string;
   aiMock: boolean;
   ocrMock: boolean;
+  ttsMock: boolean;
   availableModels: string[];
 }
 
@@ -68,7 +69,9 @@ export default function AdminSettings() {
   }, [t.adminLoadError]);
 
   const patch = async (
-    body: Partial<Pick<AdminConfig, "geminiModel" | "aiMock" | "ocrMock">>,
+    body: Partial<
+      Pick<AdminConfig, "geminiModel" | "aiMock" | "ocrMock" | "ttsMock">
+    >,
   ) => {
     if (!config || !canManage) return;
     const prev = config;
@@ -174,6 +177,20 @@ export default function AdminSettings() {
             checked={config.ocrMock}
             onChange={(v) => patch({ ocrMock: v })}
             ariaLabel={t.adminOcrMockLabel}
+            disabled={saving || !canManage}
+          />
+        </div>
+
+        {/* TTS — positive framing: ON = real Google voice (ttsMock=false) */}
+        <div className="admin-switch-row">
+          <span className="admin-switch-row__text">
+            <span className="admin-switch-row__label">{t.adminTtsLabel}</span>
+            <span className="admin-switch-row__desc">{t.adminTtsDesc}</span>
+          </span>
+          <Switch
+            checked={!config.ttsMock}
+            onChange={(v) => patch({ ttsMock: !v })}
+            ariaLabel={t.adminTtsLabel}
             disabled={saving || !canManage}
           />
         </div>

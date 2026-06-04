@@ -4,6 +4,7 @@ import type { KeyboardEvent } from "react";
 import api, { tokenStore } from "../api/axios";
 import type { Message } from "../types/message";
 import { UI_TEXT } from "../constants/uiText";
+import { SPEECH_LANG, type TargetLanguage } from "../constants/languages";
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
 import {
@@ -87,6 +88,15 @@ export default function Conversation() {
   const [error, setError] = useState<string | null>(null);
   const [quotaReached, setQuotaReached] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
+  // index of the assistant message currently being read aloud (null = none)
+  const [speakingIdx, setSpeakingIdx] = useState<number | null>(null);
+  // index whose audio is being fetched from the server (shows a spinner)
+  const [speakLoadingIdx, setSpeakLoadingIdx] = useState<number | null>(null);
+  // the conversation's target language → picks the read-aloud voice
+  const [convTargetLang, setConvTargetLang] = useState<string>("");
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioCacheRef = useRef<Map<number, string>>(new Map());
+  const activeSpeakRef = useRef<number | null>(null);
 
   const bottomRef = useRef<HTMLDivElement>(null);
   const stopRef = useRef(false);
@@ -227,6 +237,7 @@ export default function Conversation() {
         setMessages(msgs);
         setHasImage(Boolean(res.data.hasImage));
         setTitle(res.data.title || t.convDefaultTitle);
+        setConvTargetLang(res.data.targetLang || "");
 
         // Fetch image via auth'd request → blob URL so <img> tag can use it
         if (res.data.hasImage) {
@@ -464,6 +475,117 @@ export default function Conversation() {
       )
       .join("");
 
+  // Flatten markdown to plain prose for text-to-speech (drop code, math, md
+  // symbols, links→text) so the speaker reads words, not syntax.
+  const ttsPlainText = (md: string): string =>
+    stripTitleLine(md)
+      .replace(/```[\s\S]*?```/g, " ")
+      .replace(/`([^`]+)`/g, "$1")
+      .replace(/!\[[^\]]*\]\([^)]*\)/g, " ")
+      .replace(/\[([^\]]+)\]\([^)]*\)/g, "$1")
+      .replace(/\$\$[\s\S]*?\$\$/g, " ")
+      .replace(/\$[^$]*\$/g, " ")
+      .replace(/[#>*_~`|]/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+
+  // Stop whatever is currently playing (server audio or browser voice).
+  const stopSpeak = () => {
+    activeSpeakRef.current = null;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current = null;
+    }
+    window.speechSynthesis?.cancel();
+    setSpeakingIdx(null);
+    setSpeakLoadingIdx(null);
+  };
+
+  const clearSpeaking = (idx: number) => {
+    if (activeSpeakRef.current === idx) {
+      activeSpeakRef.current = null;
+      setSpeakingIdx(null);
+    }
+  };
+
+  // Fallback: browser speech synthesis (used when the server TTS isn't
+  // configured). Voice language follows the conversation's target language.
+  const speakBrowser = (idx: number, md: string) => {
+    const synth = window.speechSynthesis;
+    if (!synth) {
+      toast.error(t.convSpeakUnsupported);
+      clearSpeaking(idx);
+      return;
+    }
+    const text = ttsPlainText(md);
+    if (!text) {
+      clearSpeaking(idx);
+      return;
+    }
+    const u = new SpeechSynthesisUtterance(text);
+    u.lang =
+      SPEECH_LANG[convTargetLang as TargetLanguage] ||
+      (systemLang === "vi" ? "vi-VN" : "en-US");
+    u.onend = () => clearSpeaking(idx);
+    u.onerror = () => clearSpeaking(idx);
+    synth.speak(u);
+  };
+
+  const playUrl = (idx: number, url: string) => {
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.onended = () => clearSpeaking(idx);
+    audio.onerror = () => clearSpeaking(idx);
+    audio.play().catch(() => clearSpeaking(idx));
+  };
+
+  // Read an assistant message aloud. Prefer the server's high-quality neural
+  // voice (cached per message); fall back to the browser voice if the server
+  // TTS is unavailable. Clicking the same bubble again stops it.
+  const toggleSpeak = async (idx: number, md: string) => {
+    if (activeSpeakRef.current === idx) {
+      stopSpeak();
+      return;
+    }
+    stopSpeak();
+    activeSpeakRef.current = idx;
+    setSpeakingIdx(idx);
+
+    const cached = audioCacheRef.current.get(idx);
+    if (cached) {
+      playUrl(idx, cached);
+      return;
+    }
+
+    setSpeakLoadingIdx(idx);
+    try {
+      const res = await api.post(
+        `/conversations/${id}/speech`,
+        { text: ttsPlainText(md) },
+        { responseType: "blob" },
+      );
+      setSpeakLoadingIdx((cur) => (cur === idx ? null : cur));
+      if (activeSpeakRef.current !== idx) return; // user stopped mid-fetch
+      const url = URL.createObjectURL(res.data as Blob);
+      audioCacheRef.current.set(idx, url);
+      playUrl(idx, url);
+    } catch {
+      setSpeakLoadingIdx((cur) => (cur === idx ? null : cur));
+      if (activeSpeakRef.current !== idx) return;
+      speakBrowser(idx, md); // 503 (TTS off) / network → browser voice
+    }
+  };
+
+  // Stop playback + free blob URLs when leaving the conversation.
+  useEffect(() => {
+    const cache = audioCacheRef.current;
+    return () => {
+      window.speechSynthesis?.cancel();
+      audioRef.current?.pause();
+      cache.forEach((u) => URL.revokeObjectURL(u));
+    };
+  }, []);
+
   // Whether the last assistant message is the one currently being streamed.
   const lastIndex = visibleMessages.length - 1;
   const isThreadEmpty =
@@ -572,6 +694,8 @@ export default function Conversation() {
               const isStreamingBubble =
                 loading && isLast && m.role === "assistant";
               const isTypingBubble = isStreamingBubble && m.content === "";
+              const canSpeak =
+                m.role === "assistant" && m.content !== "" && !isStreamingBubble;
 
               return (
                 <div
@@ -635,9 +759,69 @@ export default function Conversation() {
                       )}
                     </div>
                   </div>
-                  {m.createdAt && !isTypingBubble && (
-                    <div className="conversation-row__time">
-                      {formatTime(m.createdAt)}
+                  {!isTypingBubble && (m.createdAt || canSpeak) && (
+                    <div className="conversation-row__foot">
+                      {canSpeak && (
+                        <button
+                          type="button"
+                          className="conversation-speak-btn"
+                          onClick={() => toggleSpeak(idx, m.content)}
+                          disabled={speakLoadingIdx === idx}
+                          aria-busy={speakLoadingIdx === idx}
+                          aria-pressed={speakingIdx === idx}
+                          aria-label={
+                            speakingIdx === idx
+                              ? t.convStopSpeakAria
+                              : t.convSpeakAria
+                          }
+                          title={
+                            speakingIdx === idx
+                              ? t.convStopSpeakAria
+                              : t.convSpeakAria
+                          }
+                        >
+                          {speakLoadingIdx === idx ? (
+                            <Spinner size="sm" />
+                          ) : speakingIdx === idx ? (
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M11 5 6 9H2v6h4l5 4V5z" />
+                              <line x1="23" y1="9" x2="17" y2="15" />
+                              <line x1="17" y1="9" x2="23" y2="15" />
+                            </svg>
+                          ) : (
+                            <svg
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              aria-hidden="true"
+                            >
+                              <path d="M11 5 6 9H2v6h4l5 4V5z" />
+                              <path d="M15.5 8.5a5 5 0 0 1 0 7" />
+                              <path d="M19 5a9 9 0 0 1 0 14" />
+                            </svg>
+                          )}
+                        </button>
+                      )}
+                      {m.createdAt && (
+                        <span className="conversation-row__time">
+                          {formatTime(m.createdAt)}
+                        </span>
+                      )}
                     </div>
                   )}
                 </div>

@@ -256,12 +256,50 @@
   background: var(--color-bg-tertiary);
 }
 
-.conversation-row__time {
+/* footer under a bubble: speak button (assistant) + timestamp */
+.conversation-row__foot {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
   margin-top: var(--space-1);
   /* line up under the bubble, past the avatar gutter (32px avatar + gap) */
   padding: 0 calc(32px + var(--space-2) + var(--space-1));
+}
+
+/* user replies are right-aligned — keep their timestamp on the right too */
+.conversation-row--user .conversation-row__foot {
+  flex-direction: row-reverse;
+}
+
+.conversation-row__time {
   font-size: var(--text-xs);
   color: var(--color-text-tertiary);
+}
+
+/* read-aloud (TTS) button on AI replies */
+.conversation-speak-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  transition: background var(--transition-fast), color var(--transition-fast);
+}
+
+.conversation-speak-btn:hover {
+  background: var(--color-hover-subtle);
+  color: var(--color-text);
+}
+
+/* active (currently reading) */
+.conversation-speak-btn[aria-pressed="true"] {
+  color: var(--color-primary);
 }
 
 /* streaming caret */

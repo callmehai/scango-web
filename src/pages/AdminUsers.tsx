@@ -49,11 +49,19 @@ interface AdminUser {
   asksLimit: number;
 }
 
+interface PlanStat {
+  code: string;
+  name: string;
+  priceVnd: number;
+  count: number;
+}
+
 interface Metrics {
   totalUsers: number;
   totalConversations: number;
   aiCalls: number;
   estimatedGeminiCostUsd: number;
+  planBreakdown?: PlanStat[];
 }
 
 export default function AdminUsers() {
@@ -184,6 +192,23 @@ export default function AdminUsers() {
               <span className="admin-metric__label">{m.label}</span>
             </Card>
           ))}
+        </div>
+      )}
+
+      {/* Subscribers per paid plan */}
+      {metrics?.planBreakdown && (
+        <div className="admin-plan-stats">
+          <span className="admin-plan-stats__title">{t.adminPlanStatsTitle}</span>
+          <div className="admin-plan-stats__grid">
+            {metrics.planBreakdown
+              .filter((p) => p.priceVnd > 0)
+              .map((p) => (
+                <Card key={p.code} padding="md" className="admin-plan-stat">
+                  <span className="admin-plan-stat__count">{p.count}</span>
+                  <span className="admin-plan-stat__name">{p.name}</span>
+                </Card>
+              ))}
+          </div>
         </div>
       )}
 

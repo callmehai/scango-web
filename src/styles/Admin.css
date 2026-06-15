@@ -537,3 +537,138 @@
     text-align: left;
   }
 }
+
+/* ============================================================
+   AdminUsers — subscribers per plan
+   ============================================================ */
+
+.admin-plan-stats {
+  margin-bottom: var(--space-4);
+}
+
+.admin-plan-stats__title {
+  display: block;
+  font-size: var(--text-sm);
+  font-weight: var(--font-semibold);
+  color: var(--color-text-secondary);
+  margin-bottom: var(--space-2);
+}
+
+.admin-plan-stats__grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: var(--space-3);
+}
+
+.admin-plan-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  text-align: center;
+}
+
+.admin-plan-stat__count {
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  background: var(--gradient-primary);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.admin-plan-stat__name {
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+}
+
+/* ============================================================
+   AdminRevenue — daily income + CSS bar chart
+   ============================================================ */
+
+.revenue-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: var(--space-4);
+}
+
+.revenue-toolbar .field {
+  min-width: 160px;
+}
+
+.revenue-chart-card {
+  margin-top: var(--space-4);
+}
+
+.revenue-chart-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  margin-bottom: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.revenue-chart-title {
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+}
+
+.revenue-chart-max {
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.revenue-chart {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 200px;
+  padding-top: var(--space-2);
+  overflow-x: auto;
+}
+
+.revenue-chart__col {
+  flex: 1 1 0;
+  min-width: 6px;
+  height: 100%;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.revenue-chart__bar {
+  width: 100%;
+  max-width: 22px;
+  min-height: 2px;
+  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+  background: var(--gradient-primary);
+  transition: opacity var(--transition-fast);
+}
+
+.revenue-chart__bar:hover {
+  opacity: 0.75;
+}
+
+.revenue-chart__bar--empty {
+  background: var(--color-border);
+}
+
+.revenue-chart-axis {
+  display: flex;
+  justify-content: space-between;
+  margin-top: var(--space-2);
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.revenue-note {
+  margin: var(--space-3) 0 0;
+  font-size: var(--text-xs);
+  color: var(--color-text-tertiary);
+}
+
+.revenue-chart-wrap {
+  width: 100%;
+  margin-top: var(--space-2);
+}

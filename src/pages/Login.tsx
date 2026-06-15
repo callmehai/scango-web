@@ -4,6 +4,7 @@ import { GoogleLogin } from "@react-oauth/google";
 import { useAuth } from "../hooks/useAuth";
 import { useSettings } from "../hooks/useSettings";
 import { UI_TEXT } from "../constants/uiText";
+import { Spinner } from "../components/ui";
 import Logo from "../components/Logo";
 import AuthTopControls from "../components/AuthTopControls";
 import "../styles/Auth.css";
@@ -14,6 +15,7 @@ export default function Login() {
   const t = UI_TEXT[systemLang];
   const { loginWithGoogle, user } = useAuth();
   const [error, setError] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
   // Always land on Home after authenticating. We intentionally do NOT restore
   // the pre-login location: it may belong to a previous account (e.g. a
@@ -49,7 +51,10 @@ export default function Login() {
           </div>
         )}
 
-        <div className="auth-google">
+        <div
+          className={`auth-google${submitting ? " auth-google--busy" : ""}`}
+          aria-busy={submitting}
+        >
           <GoogleLogin
             // Remount when the app language changes so Google re-renders the
             // button in the locale set on <GoogleOAuthProvider> (the GSI
@@ -58,11 +63,13 @@ export default function Login() {
             onSuccess={async (cred) => {
               if (!cred.credential) return;
               setError(false);
+              setSubmitting(true);
               try {
                 await loginWithGoogle(cred.credential);
                 navigate("/", { replace: true });
               } catch {
                 setError(true);
+                setSubmitting(false);
               }
             }}
             onError={() => setError(true)}
@@ -73,6 +80,11 @@ export default function Login() {
             theme="filled_blue"
             logo_alignment="left"
           />
+          {submitting && (
+            <div className="auth-google__overlay">
+              <Spinner size="md" />
+            </div>
+          )}
         </div>
 
         <p className="auth-note">{t.authTermsNote}</p>

@@ -1,5 +1,5 @@
 import { useNavigate, useParams } from "react-router-dom";
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { KeyboardEvent } from "react";
 import api, { tokenStore } from "../api/axios";
 import type { Message } from "../types/message";
@@ -28,6 +28,48 @@ import "katex/dist/katex.min.css";
 const MAX_QUESTION_CHARS = 4000;
 // Keep in sync with backend RenameConversationRequest: [StringLength(200, MinimumLength = 1)]
 const MAX_TITLE_CHARS = 200;
+
+// The OCR/scan prompt makes Gemini emit a leading "TITLE: ..." line (used to
+// name the conversation) before the body. Strip it so it never shows in the
+// chat bubble — the title already lives in the top bar.
+function stripTitleLine(text: string): string {
+  return text.replace(/^\s*TITLE:.*(?:\r?\n)+/i, "");
+}
+
+// Gemini emits LaTeX with \( \) / \[ \] delimiters as often as $ / $$, but
+// remark-math only understands the dollar form. Normalize the backslash
+// delimiters to dollars so formulas render, while leaving fenced/inline code
+// untouched (those segments sit at the odd indices of the split).
+function normalizeMath(text: string): string {
+  return text
+    .split(/(```[\s\S]*?```|`[^`]*`)/g)
+    .map((seg, i) =>
+      i % 2 === 1
+        ? seg
+        : seg
+            .replace(/\\\[([\s\S]+?)\\\]/g, (_m, body) => `$$${body}$$`)
+            .replace(/\\\(([\s\S]+?)\\\)/g, (_m, body) => `$${body}$`),
+    )
+    .join("");
+}
+
+// Assistant markdown is expensive to render (remark-math + KaTeX). Memoize it
+// per content string so a streaming tick only re-parses the growing last
+// bubble — not every prior assistant message in the thread.
+const AssistantMarkdown = memo(function AssistantMarkdown({
+  content,
+}: {
+  content: string;
+}) {
+  return (
+    <ReactMarkdown
+      remarkPlugins={[remarkMath]}
+      rehypePlugins={[[rehypeKatex, { throwOnError: false }]]}
+    >
+      {normalizeMath(stripTitleLine(content))}
+    </ReactMarkdown>
+  );
+});
 
 async function consumeSseStream(
   reader: ReadableStreamDefaultReader<Uint8Array>,
@@ -453,27 +495,8 @@ export default function Conversation() {
       minute: "2-digit",
     });
 
-  // The OCR/scan prompt makes Gemini emit a leading "TITLE: ..." line (used to
-  // name the conversation) before the body. Strip it so it never shows in the
-  // chat bubble — the title already lives in the top bar.
-  const stripTitleLine = (text: string) =>
-    text.replace(/^\s*TITLE:.*(?:\r?\n)+/i, "");
-
-  // Gemini emits LaTeX with \( \) / \[ \] delimiters as often as $ / $$, but
-  // remark-math only understands the dollar form. Normalize the backslash
-  // delimiters to dollars so formulas render, while leaving fenced/inline code
-  // untouched (those segments sit at the odd indices of the split).
-  const normalizeMath = (text: string): string =>
-    text
-      .split(/(```[\s\S]*?```|`[^`]*`)/g)
-      .map((seg, i) =>
-        i % 2 === 1
-          ? seg
-          : seg
-              .replace(/\\\[([\s\S]+?)\\\]/g, (_m, body) => `$$${body}$$`)
-              .replace(/\\\(([\s\S]+?)\\\)/g, (_m, body) => `$${body}$`),
-      )
-      .join("");
+  // `stripTitleLine` / `normalizeMath` live at module scope now (shared with the
+  // memoized <AssistantMarkdown> defined at the top of this file).
 
   // Flatten markdown to plain prose for text-to-speech (drop code, math, md
   // symbols, links→text) so the speaker reads words, not syntax.
@@ -737,14 +760,7 @@ export default function Conversation() {
                         </div>
                       ) : m.role === "assistant" ? (
                         <div className="conversation-bubble__md">
-                          <ReactMarkdown
-                            remarkPlugins={[remarkMath]}
-                            rehypePlugins={[
-                              [rehypeKatex, { throwOnError: false }],
-                            ]}
-                          >
-                            {normalizeMath(stripTitleLine(m.content))}
-                          </ReactMarkdown>
+                          <AssistantMarkdown content={m.content} />
                           {isStreamingBubble && m.content !== "" && (
                             <span
                               className="conversation-caret"

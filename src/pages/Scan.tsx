@@ -46,6 +46,18 @@ export default function Scan() {
   const [dragOver, setDragOver] = useState(false);
   const [scanQuotaReached, setScanQuotaReached] = useState(false);
 
+  // The OCR + conversation-create call is a single blocking request with no
+  // progress events, so cycle reassuring status copy on a timer (holding on the
+  // last message) instead of showing one frozen "Processing…" for 5–30s.
+  // `stage` is reset to 0 at submit time (see onSubmit), so the effect only owns
+  // the interval and never calls setState synchronously in its body.
+  const [stage, setStage] = useState(0);
+  useEffect(() => {
+    if (!loading) return;
+    const id = setInterval(() => setStage((s) => Math.min(s + 1, 2)), 3000);
+    return () => clearInterval(id);
+  }, [loading]);
+
   useEffect(() => {
     localStorage.setItem("lastSelectedTopic", topic);
   }, [topic]);
@@ -155,6 +167,7 @@ export default function Scan() {
     if (!file) return;
 
     setLoading(true);
+    setStage(0);
     setError(null);
 
     try {
@@ -291,7 +304,7 @@ export default function Scan() {
                 {t.scanUploadGallery}
               </Button>
             </div>
-            <p className="scan-dropzone-hint">{t.scanErrTooLarge}</p>
+            <p className="scan-dropzone-hint">{t.scanUploadHint}</p>
           </div>
         ) : (
           <div className="scan-preview">
@@ -502,15 +515,22 @@ export default function Scan() {
         {loading ? t.scanProcessing : t.scanSubmit}
       </Button>
 
-      {/* Processing overlay */}
-      {loading && (
-        <div className="scan-overlay" role="status" aria-live="polite">
-          <div className="scan-overlay-box">
-            <Spinner size="lg" label={t.scanProcessing} />
-            <p className="scan-overlay-text">{t.scanProcessing}</p>
-          </div>
-        </div>
-      )}
+      {/* Processing overlay — staged, reassuring status copy */}
+      {loading &&
+        (() => {
+          const stageText =
+            [t.scanStageUploading, t.scanStageReading, t.scanStageThinking][
+              stage
+            ] ?? t.scanProcessing;
+          return (
+            <div className="scan-overlay" role="status" aria-live="polite">
+              <div className="scan-overlay-box">
+                <Spinner size="lg" label={stageText} />
+                <p className="scan-overlay-text">{stageText}</p>
+              </div>
+            </div>
+          );
+        })()}
     </form>
   );
 }

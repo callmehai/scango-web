@@ -51,12 +51,24 @@
   max-width: 360px;
   aspect-ratio: 1 / 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  font-size: var(--text-3xl);
+  gap: var(--space-3);
+  padding: var(--space-5);
+  text-align: center;
   border-radius: var(--radius-lg);
   border: 1px dashed var(--color-border);
   color: var(--color-text-muted);
+}
+
+.checkout__qr-fallback-icon {
+  font-size: var(--text-3xl);
+}
+
+.checkout__qr-fallback-text {
+  font-size: var(--text-sm);
+  line-height: var(--leading-snug, 1.4);
 }
 
 /* Amount — big gradient number so the key figure pops. */
@@ -203,6 +215,81 @@
   background: var(--color-hover-subtle);
   padding: 2px var(--space-2);
   border-radius: var(--radius-full);
+}
+
+/* Last-minute urgency so users don't let the order lapse mid-transfer. */
+.checkout__timer--urgent {
+  color: var(--color-warning);
+  background: var(--color-warning-bg);
+  font-weight: var(--font-semibold);
+}
+
+/* Trust anchor — "Transfer to <holder>". */
+.checkout__payto {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: var(--space-2);
+  flex-wrap: wrap;
+  font-size: var(--text-sm);
+}
+
+.checkout__payto-label {
+  color: var(--color-text-muted);
+}
+
+.checkout__payto-value {
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+/* Reassurance line under the transfer memo. */
+.checkout__secure {
+  margin: 0;
+  text-align: center;
+  font-size: var(--text-xs);
+  color: var(--color-success);
+  line-height: var(--leading-snug, 1.4);
+}
+
+/* Success state — brief confirmation before the modal closes itself. */
+.checkout__success-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 56px;
+  height: 56px;
+  border-radius: var(--radius-full);
+  background: var(--color-success-bg);
+  color: var(--color-success);
+  font-size: var(--text-2xl);
+  font-weight: var(--font-bold);
+  animation: checkout-pop var(--transition-base) ease-out;
+}
+
+.checkout__success-title {
+  margin: 0;
+  font-size: var(--text-lg);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+.checkout__verifying-title {
+  margin: 0;
+  font-size: var(--text-base);
+  font-weight: var(--font-semibold);
+  color: var(--color-text);
+}
+
+@keyframes checkout-pop {
+  0% {
+    transform: scale(0.6);
+    opacity: 0;
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
 }
 
 .checkout__hint {

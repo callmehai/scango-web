@@ -1,4 +1,5 @@
 import { useSettings } from "../hooks/useSettings";
+import { UI_TEXT } from "../constants/uiText";
 
 /**
  * Theme + language toggles for the auth surface (Login / Register / VerifyEmail).
@@ -8,19 +9,20 @@ import { useSettings } from "../hooks/useSettings";
  */
 export default function AuthTopControls() {
   const { systemLang, theme, toggleTheme, setSystemLang } = useSettings();
+  const t = UI_TEXT[systemLang];
 
   return (
-    <div className="auth-controls" role="toolbar" aria-label="Display settings">
+    <div
+      className="auth-controls"
+      role="toolbar"
+      aria-label={t.a11yDisplaySettings}
+    >
       <button
         type="button"
         className="auth-controls__btn"
         onClick={toggleTheme}
-        aria-label={
-          theme === "light" ? "Switch to dark mode" : "Switch to light mode"
-        }
-        title={
-          theme === "light" ? "Switch to dark mode" : "Switch to light mode"
-        }
+        aria-label={theme === "light" ? t.a11yThemeToDark : t.a11yThemeToLight}
+        title={theme === "light" ? t.a11yThemeToDark : t.a11yThemeToLight}
       >
         {theme === "light" ? (
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -45,8 +47,8 @@ export default function AuthTopControls() {
         type="button"
         className="auth-controls__btn auth-controls__btn--lang"
         onClick={() => setSystemLang(systemLang === "vi" ? "en" : "vi")}
-        aria-label={`Switch language (current: ${systemLang.toUpperCase()})`}
-        title={`Switch language — currently ${systemLang.toUpperCase()}`}
+        aria-label={`${t.a11ySwitchLang} (${systemLang.toUpperCase()})`}
+        title={`${t.a11ySwitchLang} (${systemLang.toUpperCase()})`}
       >
         {systemLang.toUpperCase()}
       </button>

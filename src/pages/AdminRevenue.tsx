@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bar,
   BarChart,
@@ -9,7 +9,7 @@ import {
   YAxis,
 } from "recharts";
 import { useSettings } from "../hooks/useSettings";
-import { UI_TEXT } from "../constants/uiText";
+import { UI_TEXT, formatVnd } from "../constants/uiText";
 import { Card, EmptyState, ErrorState, Field, Spinner } from "../components/ui";
 import Dropdown from "../components/Dropdown";
 import api from "../api/axios";
@@ -30,7 +30,6 @@ interface RevenueData {
   series: RevenueDay[];
 }
 
-const fmtVnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
 const fmtAxis = (iso?: string) => {
   if (!iso) return "";
   const [, m, d] = iso.split("-");
@@ -51,6 +50,13 @@ export default function AdminRevenue() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Error text in a ref so a language switch doesn't change `load`'s identity
+  // (which would refetch + redraw the chart on every language toggle).
+  const loadErrorRef = useRef(t.adminLoadError);
+  useEffect(() => {
+    loadErrorRef.current = t.adminLoadError;
+  }, [t.adminLoadError]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -60,11 +66,11 @@ export default function AdminRevenue() {
       });
       setData(res.data);
     } catch {
-      setError(t.adminLoadError);
+      setError(loadErrorRef.current);
     } finally {
       setLoading(false);
     }
-  }, [days, t.adminLoadError]);
+  }, [days]);
 
   useEffect(() => {
     load();
@@ -72,9 +78,9 @@ export default function AdminRevenue() {
 
   const cards = data
     ? [
-        { label: t.adminRevenueTotal, value: fmtVnd(data.totalRevenue) },
+        { label: t.adminRevenueTotal, value: formatVnd(data.totalRevenue) },
         { label: t.adminRevenueOrders, value: data.totalOrders },
-        { label: t.adminRevenueRefunded, value: fmtVnd(data.refundedTotal) },
+        { label: t.adminRevenueRefunded, value: formatVnd(data.refundedTotal) },
       ]
     : [];
 
@@ -121,7 +127,7 @@ export default function AdminRevenue() {
             <div className="revenue-chart-head">
               <span className="revenue-chart-title">{t.adminRevenueChartTitle}</span>
               <span className="revenue-chart-max">
-                {t.adminRevenuePeak}: {fmtVnd(peak)}
+                {t.adminRevenuePeak}: {formatVnd(peak)}
               </span>
             </div>
 
@@ -159,7 +165,7 @@ export default function AdminRevenue() {
                   />
                   <Tooltip
                     cursor={{ fill: "var(--color-hover-subtle)" }}
-                    formatter={(v) => [fmtVnd(Number(v)), t.adminRevenueTotal]}
+                    formatter={(v) => [formatVnd(Number(v)), t.adminRevenueTotal]}
                     labelFormatter={(label) => fmtAxis(String(label))}
                     contentStyle={{
                       background: "var(--color-surface-raised)",

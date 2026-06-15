@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSettings } from "../hooks/useSettings";
-import { UI_TEXT } from "../constants/uiText";
+import { UI_TEXT, formatVnd } from "../constants/uiText";
 import { Button, Modal, Spinner, useToast } from "./ui";
 import api from "../api/axios";
 import "../styles/Checkout.css";
@@ -32,6 +32,10 @@ interface CheckoutModalProps {
 }
 
 const POLL_MS = 4000;
+// Show the success state briefly before handing control back to the parent.
+const SUCCESS_HOLD_MS = 1800;
+// Highlight the countdown once it drops under this, so users feel the urgency.
+const URGENT_SECONDS = 60;
 
 export default function CheckoutModal({
   open,
@@ -80,6 +84,7 @@ export default function CheckoutModal({
       setOrder(null);
       setError(null);
       setCopied(false);
+      setQrFailed(false);
     }
   }, [open, plan, createOrder]);
 
@@ -97,21 +102,29 @@ export default function CheckoutModal({
     if (!open) return;
     const timer = setInterval(async () => {
       const cur = orderRef.current;
+      // Keep polling as long as the server says "pending" — this deliberately
+      // continues past the client-side countdown so a bank confirmation that
+      // lands a little late still flips the order to "paid".
       if (!cur || cur.status !== "pending") return;
       try {
         const res = await api.get<OrderView>(`/payments/orders/${cur.id}`);
         if (res.data.status !== cur.status) setOrder(res.data);
-        if (res.data.status === "paid") {
-          toast.success(t.checkoutPaidToast);
-          onPaidRef.current();
-          onCloseRef.current();
-        }
       } catch {
         /* transient network error — keep polling */
       }
     }, POLL_MS);
     return () => clearInterval(timer);
-  }, [open, toast, t.checkoutPaidToast]);
+  }, [open]);
+
+  // On success: refresh the parent immediately, then hold the success screen a
+  // beat so the user actually sees the confirmation before the modal closes.
+  useEffect(() => {
+    if (order?.status !== "paid") return;
+    toast.success(t.checkoutPaidToast);
+    onPaidRef.current();
+    const id = setTimeout(() => onCloseRef.current(), SUCCESS_HOLD_MS);
+    return () => clearTimeout(id);
+  }, [order?.status, toast, t.checkoutPaidToast]);
 
   // Countdown tick.
   useEffect(() => {
@@ -133,14 +146,18 @@ export default function CheckoutModal({
     }
   };
 
-  const expired =
-    !!order &&
-    (remaining <= 0 ||
-      order.status === "expired" ||
-      order.status === "cancelled");
-  const fmtVnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
   const mmss = (s: number) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;
+
+  const status = order?.status;
+  const paid = status === "paid";
+  const serverExpired = status === "expired" || status === "cancelled";
+  const countdownDone = remaining <= 0;
+  // Client clock hit zero but the server still says "pending": the transfer may
+  // be in flight (the backend honors slightly-late payments), so show a soft
+  // "verifying" state — NEVER a hard "expired" — until the server expires it.
+  const verifying = !!order && !paid && !serverExpired && countdownDone;
+  const urgent = !countdownDone && remaining <= URGENT_SECONDS;
 
   return (
     <Modal
@@ -152,7 +169,8 @@ export default function CheckoutModal({
     >
       {loading ? (
         <div className="checkout__state">
-          <Spinner size="lg" />
+          <Spinner size="lg" label={t.checkoutCreating} />
+          <p className="checkout__hint">{t.checkoutCreating}</p>
         </div>
       ) : error ? (
         <div className="checkout__state">
@@ -161,10 +179,28 @@ export default function CheckoutModal({
             {t.checkoutRetry}
           </Button>
         </div>
-      ) : !order ? null : expired ? (
+      ) : !order ? null : paid ? (
+        <div className="checkout__state checkout__success">
+          <span className="checkout__success-icon" aria-hidden="true">
+            ✓
+          </span>
+          <p className="checkout__success-title">{t.checkoutSuccess}</p>
+          <p className="checkout__hint">{t.checkoutSuccessHint}</p>
+        </div>
+      ) : serverExpired ? (
         <div className="checkout__state">
           <p className="checkout__error">{t.checkoutExpired}</p>
+          <p className="checkout__hint">{t.checkoutExpiredHint}</p>
           <Button variant="primary" onClick={createOrder}>
+            {t.checkoutRetry}
+          </Button>
+        </div>
+      ) : verifying ? (
+        <div className="checkout__state">
+          <Spinner size="lg" label={t.checkoutVerifying} />
+          <p className="checkout__verifying-title">{t.checkoutVerifying}</p>
+          <p className="checkout__hint">{t.checkoutVerifyingHint}</p>
+          <Button variant="subtle" size="sm" onClick={createOrder}>
             {t.checkoutRetry}
           </Button>
         </div>
@@ -174,8 +210,13 @@ export default function CheckoutModal({
 
           <div className="checkout__qr">
             {qrFailed ? (
-              <div className="checkout__qr-fallback" aria-hidden="true">
-                ⚠️
+              <div className="checkout__qr-fallback">
+                <span className="checkout__qr-fallback-icon" aria-hidden="true">
+                  ⚠️
+                </span>
+                <span className="checkout__qr-fallback-text">
+                  {t.checkoutQrFailed}
+                </span>
               </div>
             ) : (
               <img
@@ -190,11 +231,19 @@ export default function CheckoutModal({
 
           <div className="checkout__amount-hero">
             <span className="checkout__amount-label">{t.checkoutAmount}</span>
-            <span className="checkout__amount-value">{fmtVnd(order.amountVnd)}</span>
+            <span className="checkout__amount-value">
+              {formatVnd(order.amountVnd)}
+            </span>
           </div>
 
-          {/* The VietQR image already prints bank / account / holder, so these
-              details are only needed as a fallback when the QR fails to load. */}
+          {/* Trust anchor — show who the money goes to even when the QR loads,
+              so users aren't transferring "into the void". */}
+          <div className="checkout__payto">
+            <span className="checkout__payto-label">{t.checkoutPayTo}</span>
+            <span className="checkout__payto-value">{order.accountHolder}</span>
+          </div>
+
+          {/* Full bank details only as a fallback when the QR fails to load. */}
           {qrFailed && (
             <dl className="checkout__info">
               <div>
@@ -225,10 +274,14 @@ export default function CheckoutModal({
             <p className="checkout__warn">⚠️ {t.checkoutContentWarn}</p>
           </div>
 
+          <p className="checkout__secure">🔒 {t.checkoutSecure}</p>
+
           <div className="checkout__waiting">
             <span className="checkout__pulse" aria-hidden="true" />
             <span className="checkout__waiting-text">{t.checkoutWaiting}</span>
-            <span className="checkout__timer">
+            <span
+              className={`checkout__timer${urgent ? " checkout__timer--urgent" : ""}`}
+            >
               ⏳ {mmss(remaining)}
             </span>
           </div>

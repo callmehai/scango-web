@@ -4,7 +4,7 @@ import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
 import { SETTINGS_LANGUAGES } from "../constants/settingsLanguages";
 import { LANGUAGE_MAP, type TargetLanguage } from "../constants/languages";
-import { UI_TEXT } from "../constants/uiText";
+import { UI_TEXT, planLabel } from "../constants/uiText";
 import Dropdown from "../components/Dropdown";
 import CheckoutModal from "../components/CheckoutModal";
 import { Button, Card } from "../components/ui";
@@ -15,38 +15,35 @@ const APP_VERSION = "1.0.0";
 
 // Plan catalogue — mirrors scango-api Features/Billing/Plans.cs (display only).
 // Every plan has a weekly quota. "tester" is a ROLE, not a plan, so it's absent.
+// Display names are NOT stored here — resolve them via planLabel(code, t) so the
+// pricing list stays localized and consistent with the rest of the app.
 const PLANS = [
   {
     code: "free",
-    name: "Free",
     price: "0đ",
     duration: null,
     limitKey: "plansLimitFree",
   },
   {
     code: "lite",
-    name: "Lite",
     price: "29.000đ",
     duration: "plansDuration7",
     limitKey: "plansLimitLite",
   },
   {
     code: "basic_monthly",
-    name: "Basic",
     price: "49.000đ",
     duration: "plansDuration30",
     limitKey: "plansLimitBasic",
   },
   {
     code: "pro_monthly",
-    name: "Pro",
     price: "149.000đ",
     duration: "plansDuration30",
     limitKey: "plansLimitPro",
   },
   {
     code: "pro_yearly",
-    name: "Max",
     price: "1.290.000đ",
     duration: "plansDuration365",
     limitKey: "plansLimitPro",
@@ -248,7 +245,7 @@ export default function Settings() {
                 >
                   <div className="settings__plan-main">
                     <span className="settings__plan-name">
-                      {plan.name}
+                      {planLabel(plan.code, t)}
                       {isCurrent && (
                         <span className="settings__plan-badge">
                           {t.plansCurrentBadge}
@@ -270,7 +267,10 @@ export default function Settings() {
                         size="sm"
                         className="settings__plan-buy"
                         onClick={() =>
-                          setBuyTarget({ code: plan.code, name: plan.name })
+                          setBuyTarget({
+                            code: plan.code,
+                            name: planLabel(plan.code, t),
+                          })
                         }
                       >
                         {t.buyBtn}

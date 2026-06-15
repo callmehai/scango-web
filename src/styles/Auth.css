@@ -193,6 +193,7 @@
 
 /* ----- Google sign-in wrapper ----- */
 .auth-google {
+  position: relative;
   display: flex;
   justify-content: center;
   width: 100%;
@@ -216,6 +217,25 @@
   overflow: hidden;
   background: transparent !important;
   color-scheme: light;   /* keep GSI in its light rendering regardless of theme */
+}
+
+/* Sign-in in progress — block re-clicks and float a spinner over the button so
+   the slow token-exchange round-trip doesn't look frozen. */
+.auth-google--busy {
+  pointer-events: none;
+}
+
+.auth-google--busy > div,
+.auth-google--busy iframe {
+  opacity: 0.4;
+}
+
+.auth-google__overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .auth-note {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
-import { UI_TEXT } from "../constants/uiText";
+import { UI_TEXT, planLabel } from "../constants/uiText";
 import api from "../api/axios";
 import {
   Badge,
@@ -209,7 +209,7 @@ export default function Profile() {
             <p className="profile__email">{user.email}</p>
             <div className="profile__badges">
               <Badge variant={isPaid ? "primary" : "neutral"}>
-                {user.plan}
+                {planLabel(user.plan, t)}
               </Badge>
               <Badge variant={user.role === "admin" ? "warning" : "neutral"}>
                 {user.role}
@@ -348,7 +348,7 @@ export default function Profile() {
           <Row label={t.profileEmail} value={user.email} />
           <Row label={t.profileName} value={user.name || "—"} />
           <Row label={t.profileRole} value={user.role} />
-          <Row label={t.profilePlan} value={user.plan} />
+          <Row label={t.profilePlan} value={planLabel(user.plan, t)} />
           <Row label={t.profileMemberSince} value={fmtDate(user.createdAt)} />
         </div>
       </Card>

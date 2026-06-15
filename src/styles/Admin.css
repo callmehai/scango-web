@@ -407,6 +407,12 @@
   justify-content: flex-end;
 }
 
+/* Placeholder dash when a row has no applicable action (expired / cancelled /
+   refunded) — keeps the mobile "Actions" label from looking broken/empty. */
+.admin-actions__none {
+  color: var(--color-text-tertiary);
+}
+
 /* ============================================================
    Responsive
    ============================================================ */
@@ -619,48 +625,7 @@
   color: var(--color-text-tertiary);
 }
 
-.revenue-chart {
-  display: flex;
-  align-items: flex-end;
-  gap: 3px;
-  height: 200px;
-  padding-top: var(--space-2);
-  overflow-x: auto;
-}
-
-.revenue-chart__col {
-  flex: 1 1 0;
-  min-width: 6px;
-  height: 100%;
-  display: flex;
-  align-items: flex-end;
-  justify-content: center;
-}
-
-.revenue-chart__bar {
-  width: 100%;
-  max-width: 22px;
-  min-height: 2px;
-  border-radius: var(--radius-sm) var(--radius-sm) 0 0;
-  background: var(--gradient-primary);
-  transition: opacity var(--transition-fast);
-}
-
-.revenue-chart__bar:hover {
-  opacity: 0.75;
-}
-
-.revenue-chart__bar--empty {
-  background: var(--color-border);
-}
-
-.revenue-chart-axis {
-  display: flex;
-  justify-content: space-between;
-  margin-top: var(--space-2);
-  font-size: var(--text-xs);
-  color: var(--color-text-tertiary);
-}
+/* (Old hand-rolled CSS bar-chart styles removed — AdminRevenue uses recharts.) */
 
 .revenue-note {
   margin: var(--space-3) 0 0;

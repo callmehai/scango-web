@@ -198,29 +198,31 @@
   padding: 0;
   display: flex;
   flex-direction: column;
+  gap: var(--space-3);
 }
 
+/* Each plan is its own bordered card — clear separation, no faint dividers. */
 .settings__plan {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--space-4);
-  padding: var(--space-3) 0;
-  border-bottom: 1px solid var(--color-border-light);
+  padding: var(--space-4);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-lg);
+  background: var(--color-surface);
+  transition: border-color var(--transition-fast),
+    box-shadow var(--transition-fast);
 }
 
-.settings__plan:last-child {
-  border-bottom: none;
+.settings__plan:hover {
+  border-color: var(--color-border-strong);
 }
 
 .settings__plan--current {
-  /* subtle highlight for the user's active plan */
-  margin: 0 calc(-1 * var(--space-3));
-  padding-left: var(--space-3);
-  padding-right: var(--space-3);
+  border-color: var(--color-primary);
   background: var(--color-primary-subtle);
-  border-radius: var(--radius-md);
-  border-bottom-color: transparent;
+  box-shadow: 0 0 0 1px var(--color-primary);
 }
 
 .settings__plan-main {

@@ -1,6 +1,10 @@
 export const UI_TEXT = {
     vi: {
-        appName: "Scan & Chat AI",
+        appName: "ScanGo",
+        a11yThemeToDark: "Chuyển sang chế độ tối",
+        a11yThemeToLight: "Chuyển sang chế độ sáng",
+        a11ySwitchLang: "Đổi ngôn ngữ",
+        a11yDisplaySettings: "Tùy chỉnh hiển thị",
         settings: "Cài đặt",
         settingsDescription: "Tùy chỉnh ngôn ngữ và giao diện",
 
@@ -86,6 +90,12 @@ export const UI_TEXT = {
         plansDuration7: "7 ngày",
         plansDuration365: "365 ngày",
         plansInternal: "Nội bộ",
+        planNameFree: "Free",
+        planNameLite: "Lite (tuần)",
+        planNameBasic: "Basic (tháng)",
+        planNamePro: "Pro (tháng)",
+        planNameMax: "Max (năm)",
+        planNameUnlimited: "Unlimited",
         plansNote: "Bấm \"Mua\" rồi quét QR để nâng cấp. Hạn mức làm mới vào đầu mỗi tuần.",
 
         // ========== PAYMENT / CHECKOUT ==========
@@ -109,6 +119,18 @@ export const UI_TEXT = {
         checkoutRetry: "Tạo đơn mới",
         checkoutCreateError: "Không tạo được đơn. Vui lòng thử lại.",
         checkoutNotConfigured: "Thanh toán chưa được cấu hình. Vui lòng liên hệ quản trị viên.",
+        checkoutCreating: "Đang tạo đơn…",
+        checkoutPayTo: "Chuyển tới",
+        checkoutSecure: "Tự động xác nhận khi nhận được tiền — bạn không cần nhập thẻ.",
+        checkoutQrFailed:
+          "Không tải được mã QR — vui lòng chuyển khoản thủ công theo thông tin bên dưới.",
+        checkoutVerifying: "Đang xác nhận thanh toán…",
+        checkoutVerifyingHint:
+          "Nếu bạn vừa chuyển khoản, hãy chờ thêm chút — hệ thống đang đối soát. Đừng chuyển lại.",
+        checkoutSuccess: "Đã kích hoạt gói!",
+        checkoutSuccessHint: "Cảm ơn bạn — gói của bạn đã sẵn sàng sử dụng.",
+        checkoutExpiredHint:
+          "Nếu bạn CHƯA chuyển khoản, hãy tạo đơn mới. Nếu đã chuyển, gói vẫn sẽ tự kích hoạt — vui lòng đừng chuyển lại.",
 
         // Payment status labels (sync với PaymentOrderStatuses .NET)
         payStatusPending: "Chờ thanh toán",
@@ -154,6 +176,11 @@ export const UI_TEXT = {
         scanSubmit: "Scan & Chat",
         scanProcessing: "Đang xử lý...",
         scanHelp: "Chọn ảnh tài liệu, hóa đơn, menu, hay bất kỳ tài liệu nào bạn muốn dịch hoặc hỏi",
+
+        scanUploadHint: "PNG, JPG tối đa 10MB — hoặc kéo-thả ảnh vào đây",
+        scanStageUploading: "Đang tải ảnh lên…",
+        scanStageReading: "Đang đọc chữ trong ảnh…",
+        scanStageThinking: "Đang chuẩn bị hội thoại…",
 
         scanErrNotImage: "Vui lòng chọn file hình ảnh",
         scanErrTooLarge: "File quá lớn (tối đa 10MB)",
@@ -466,7 +493,11 @@ export const UI_TEXT = {
     },
 
     en: {
-        appName: "Scan & Chat AI",
+        appName: "ScanGo",
+        a11yThemeToDark: "Switch to dark mode",
+        a11yThemeToLight: "Switch to light mode",
+        a11ySwitchLang: "Switch language",
+        a11yDisplaySettings: "Display settings",
         settings: "Settings",
         settingsDescription: "Customize language and appearance",
 
@@ -552,6 +583,12 @@ export const UI_TEXT = {
         plansDuration7: "7 days",
         plansDuration365: "365 days",
         plansInternal: "Internal",
+        planNameFree: "Free",
+        planNameLite: "Lite (weekly)",
+        planNameBasic: "Basic (monthly)",
+        planNamePro: "Pro (monthly)",
+        planNameMax: "Max (yearly)",
+        planNameUnlimited: "Unlimited",
         plansNote: "Tap \"Buy\" and scan the QR to upgrade. Quota resets at the start of each week.",
 
         // ========== PAYMENT / CHECKOUT ==========
@@ -575,6 +612,18 @@ export const UI_TEXT = {
         checkoutRetry: "Create a new order",
         checkoutCreateError: "Couldn't create the order. Please try again.",
         checkoutNotConfigured: "Payment isn't configured yet. Please contact an admin.",
+        checkoutCreating: "Creating your order…",
+        checkoutPayTo: "Transfer to",
+        checkoutSecure: "Auto-verified when the money arrives — no card details needed.",
+        checkoutQrFailed:
+          "Couldn't load the QR — please transfer manually using the details below.",
+        checkoutVerifying: "Confirming your payment…",
+        checkoutVerifyingHint:
+          "If you just transferred, please wait a moment while we verify it. Don't transfer again.",
+        checkoutSuccess: "Plan activated!",
+        checkoutSuccessHint: "Thank you — your plan is ready to use.",
+        checkoutExpiredHint:
+          "If you HAVEN'T transferred yet, create a new order. If you already did, your plan will still activate — please don't transfer again.",
 
         // Payment status labels (sync with PaymentOrderStatuses .NET)
         payStatusPending: "Pending",
@@ -620,6 +669,11 @@ export const UI_TEXT = {
         scanSubmit: "Scan & Chat",
         scanProcessing: "Processing...",
         scanHelp: "Choose an image of a document, receipt, menu, or anything you want to translate or ask about",
+
+        scanUploadHint: "PNG, JPG up to 10MB — or drag & drop here",
+        scanStageUploading: "Uploading image…",
+        scanStageReading: "Reading text from image…",
+        scanStageThinking: "Preparing your conversation…",
 
         scanErrNotImage: "Please select an image file",
         scanErrTooLarge: "File is too large (max 10MB)",
@@ -931,3 +985,31 @@ export const UI_TEXT = {
         historyPaginationLast: "Last page",
     },
 };
+
+export type UiText = (typeof UI_TEXT)["vi"];
+
+/** Localized plan display name from a plan code. The backend returns Vietnamese
+ *  plan names, so the UI must resolve the label from the code instead. */
+export function planLabel(code: string, t: UiText): string {
+  switch (code) {
+    case "free":
+      return t.planNameFree;
+    case "lite":
+      return t.planNameLite;
+    case "basic_monthly":
+      return t.planNameBasic;
+    case "pro_monthly":
+      return t.planNamePro;
+    case "pro_yearly":
+      return t.planNameMax;
+    case "unlimited":
+      return t.planNameUnlimited;
+    default:
+      return code;
+  }
+}
+
+/** Format a VND amount the Vietnamese way, e.g. 29000 -> "29.000đ". */
+export function formatVnd(n: number): string {
+  return `${n.toLocaleString("vi-VN")}đ`;
+}

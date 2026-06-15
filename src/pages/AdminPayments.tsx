@@ -1,6 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useSettings } from "../hooks/useSettings";
-import { UI_TEXT } from "../constants/uiText";
+import { UI_TEXT, planLabel, formatVnd } from "../constants/uiText";
 import {
   Badge,
   Button,
@@ -75,6 +75,13 @@ export default function AdminPayments() {
       refunded: "primary",
     })[s] as BadgeVariant ?? "neutral";
 
+  // Error text in a ref so a language switch doesn't change `load`'s identity
+  // (which would refetch the list on every language toggle).
+  const loadErrorRef = useRef(t.adminLoadError);
+  useEffect(() => {
+    loadErrorRef.current = t.adminLoadError;
+  }, [t.adminLoadError]);
+
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
@@ -87,11 +94,11 @@ export default function AdminPayments() {
       });
       setItems(res.data.items);
     } catch {
-      setError(t.adminLoadError);
+      setError(loadErrorRef.current);
     } finally {
       setLoading(false);
     }
-  }, [statusFilter, t.adminLoadError]);
+  }, [statusFilter]);
 
   useEffect(() => {
     load();
@@ -125,7 +132,6 @@ export default function AdminPayments() {
     await act(p.id, () => api.post(`/admin/payments/${p.id}/refund`, { note }));
   };
 
-  const fmtVnd = (n: number) => `${n.toLocaleString("vi-VN")}đ`;
   const fmtDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString(systemLang === "vi" ? "vi-VN" : "en-US") : "—";
 
@@ -187,8 +193,10 @@ export default function AdminPayments() {
                         <span className="admin-user__name">{p.userName}</span>
                       </div>
                     </td>
-                    <td data-label={t.adminPayColPlan}>{p.plan}</td>
-                    <td data-label={t.adminPayColAmount}>{fmtVnd(p.amountVnd)}</td>
+                    <td data-label={t.adminPayColPlan}>{planLabel(p.plan, t)}</td>
+                    <td data-label={t.adminPayColAmount}>
+                      {formatVnd(p.amountVnd)}
+                    </td>
                     <td data-label={t.adminPayColStatus}>
                       <Badge variant={statusVariant(p.status)} dot>
                         {statusLabel(p.status)}
@@ -235,6 +243,9 @@ export default function AdminPayments() {
                           >
                             {t.adminPayActionRefund}
                           </Button>
+                        )}
+                        {p.status !== "pending" && p.status !== "paid" && (
+                          <span className="admin-actions__none">—</span>
                         )}
                       </div>
                     </td>

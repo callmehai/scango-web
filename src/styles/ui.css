@@ -123,6 +123,17 @@
   position: relative;
 }
 
+/* Focus visibility for bare icon buttons that live inside overflow-clipping
+   containers (modal / toast / chip): a box-shadow ring isn't clipped the way an
+   outline-offset ring can be. These buttons carry no resting shadow, so this is
+   safe to override. */
+.sg-modal__close:focus-visible,
+.sg-toast__close:focus-visible,
+.sg-chip__remove:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
 /* ----------------------------------- Card ------------------------------- */
 .sg-card {
   display: block;

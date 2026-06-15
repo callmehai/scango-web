@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
+import { Spinner } from "./ui";
 import type { ReactNode } from "react";
 
 /** Like ProtectedRoute but also requires the `admin` role.
@@ -17,10 +18,9 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
           display: "flex",
           alignItems: "center",
           justifyContent: "center",
-          color: "var(--color-text)",
         }}
       >
-        <div className="loading-spinner" />
+        <Spinner size="lg" />
       </div>
     );
   }

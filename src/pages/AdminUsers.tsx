@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
-import { UI_TEXT } from "../constants/uiText";
+import { UI_TEXT, planLabel } from "../constants/uiText";
 import {
   Badge,
   Button,
@@ -110,13 +110,20 @@ export default function AdminUsers() {
     setMetrics(res.data);
   }, []);
 
+  // Keep the error text in a ref so switching language doesn't change `reload`'s
+  // identity and trigger an unwanted user-list refetch.
+  const loadErrorRef = useRef(t.adminLoadError);
+  useEffect(() => {
+    loadErrorRef.current = t.adminLoadError;
+  }, [t.adminLoadError]);
+
   const reload = useCallback(() => {
     setLoading(true);
     setError(null);
     loadUsers()
-      .catch(() => setError(t.adminLoadError))
+      .catch(() => setError(loadErrorRef.current))
       .finally(() => setLoading(false));
-  }, [loadUsers, t.adminLoadError]);
+  }, [loadUsers]);
 
   useEffect(() => {
     reload();
@@ -176,7 +183,10 @@ export default function AdminUsers() {
         { label: t.adminMetricCalls, value: metrics.aiCalls },
         {
           label: t.adminMetricCost,
-          value: `$${metrics.estimatedGeminiCostUsd}`,
+          value: `$${metrics.estimatedGeminiCostUsd.toLocaleString("en-US", {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
         },
       ]
     : [];
@@ -205,7 +215,9 @@ export default function AdminUsers() {
               .map((p) => (
                 <Card key={p.code} padding="md" className="admin-plan-stat">
                   <span className="admin-plan-stat__count">{p.count}</span>
-                  <span className="admin-plan-stat__name">{p.name}</span>
+                  <span className="admin-plan-stat__name">
+                    {planLabel(p.code, t)}
+                  </span>
                 </Card>
               ))}
           </div>
@@ -247,7 +259,7 @@ export default function AdminUsers() {
               ariaLabel={t.adminFilterPlan}
               options={[
                 { value: "all", label: t.adminAll },
-                ...plans.map((p) => ({ value: p.code, label: p.name })),
+                ...plans.map((p) => ({ value: p.code, label: planLabel(p.code, t) })),
               ]}
             />
           </Field>
@@ -354,13 +366,13 @@ export default function AdminUsers() {
                         >
                           {plans.map((p) => (
                             <option key={p.code} value={p.code}>
-                              {p.name}
+                              {planLabel(p.code, t)}
                             </option>
                           ))}
                         </select>
                       ) : (
                         <Badge variant={u.isPaid ? "primary" : "neutral"}>
-                          {u.plan}
+                          {planLabel(u.plan, t)}
                         </Badge>
                       )}
                     </td>

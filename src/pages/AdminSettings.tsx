@@ -65,8 +65,9 @@ export default function AdminSettings() {
 
   useEffect(() => {
     load();
+    // Load once on mount — don't refetch just because the language changed.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [t.adminLoadError]);
+  }, []);
 
   const patch = async (
     body: Partial<

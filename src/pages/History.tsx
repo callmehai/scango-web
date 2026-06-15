@@ -568,6 +568,8 @@ export default function History() {
               )}
           </div>
 
+          {totalPages > 1 && (
+            <>
           <div className="history__pagination-controls">
             <button
               type="button"
@@ -644,6 +646,8 @@ export default function History() {
               }))}
             />
           </div>
+            </>
+          )}
         </nav>
       )}
 

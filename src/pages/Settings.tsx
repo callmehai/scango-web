@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useSettings } from "../hooks/useSettings";
 import { useAuth } from "../hooks/useAuth";
@@ -5,6 +6,7 @@ import { SETTINGS_LANGUAGES } from "../constants/settingsLanguages";
 import { LANGUAGE_MAP, type TargetLanguage } from "../constants/languages";
 import { UI_TEXT } from "../constants/uiText";
 import Dropdown from "../components/Dropdown";
+import CheckoutModal from "../components/CheckoutModal";
 import { Button, Card } from "../components/ui";
 
 import "../styles/Settings.css";
@@ -26,7 +28,7 @@ const PLANS = [
     name: "Lite",
     price: "29.000đ",
     duration: "plansDuration7",
-    limitKey: "plansLimitBasic",
+    limitKey: "plansLimitLite",
   },
   {
     code: "basic_monthly",
@@ -58,8 +60,11 @@ export default function Settings() {
     useSettings();
 
   const t = UI_TEXT[systemLang];
-  const { user } = useAuth();
+  const { user, refreshMe } = useAuth();
   const navigate = useNavigate();
+  const [buyTarget, setBuyTarget] = useState<{ code: string; name: string } | null>(
+    null,
+  );
 
   return (
     <div className="settings">
@@ -167,8 +172,8 @@ export default function Settings() {
         </Card>
       </section>
 
-      {/* Admin — visible to admin + tester (tester sees a read-only view) */}
-      {(user?.role === "admin" || user?.role === "tester") && (
+      {/* Admin — admin-only (testers no longer have admin-panel access) */}
+      {user?.role === "admin" && (
         <section className="settings__section">
           <h2 className="settings__section-title">{t.adminTitle}</h2>
           <Card padding="md">
@@ -245,6 +250,18 @@ export default function Settings() {
                         {t[plan.duration]}
                       </span>
                     )}
+                    {!isCurrent && plan.code !== "free" && (
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        className="settings__plan-buy"
+                        onClick={() =>
+                          setBuyTarget({ code: plan.code, name: plan.name })
+                        }
+                      >
+                        {t.buyBtn}
+                      </Button>
+                    )}
                   </div>
                 </li>
               );
@@ -253,6 +270,14 @@ export default function Settings() {
           <p className="settings__plans-note">{t.plansNote}</p>
         </Card>
       </section>
+
+      <CheckoutModal
+        open={buyTarget !== null}
+        plan={buyTarget?.code ?? null}
+        planName={buyTarget?.name ?? ""}
+        onClose={() => setBuyTarget(null)}
+        onPaid={refreshMe}
+      />
     </div>
   );
 }

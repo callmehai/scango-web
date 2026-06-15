@@ -17,7 +17,17 @@ import type { BadgeVariant } from "../components/ui";
 import Dropdown from "../components/Dropdown";
 import api from "../api/axios";
 
-type SortBy = "email" | "tokens" | "convos";
+type SortField =
+  | "created"
+  | "lastLogin"
+  | "email"
+  | "name"
+  | "plan"
+  | "status"
+  | "role"
+  | "convos"
+  | "tokens";
+type SortDir = "asc" | "desc";
 
 import "../styles/Admin.css";
 
@@ -50,7 +60,8 @@ export default function AdminUsers() {
   const { systemLang } = useSettings();
   const { user: me } = useAuth();
   const t = UI_TEXT[systemLang];
-  // Testers get the full read-only view; only admins can mutate users.
+  // Only admins reach this page now (AdminRoute), so canManage is effectively
+  // always true here — kept as a defensive guard around the mutation controls.
   const canManage = me?.role === "admin";
 
   const [users, setUsers] = useState<AdminUser[]>([]);
@@ -61,31 +72,30 @@ export default function AdminUsers() {
   const [plans, setPlans] = useState<{ code: string; name: string }[]>([]);
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [planFilter, setPlanFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<SortBy>("email");
+  const [sortBy, setSortBy] = useState<SortField>("created");
+  const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  // Filter + sort happen client-side over the fetched page (server still does
-  // the text search via `q`). Keeps the table usable as the user list grows.
-  const visibleUsers = useMemo(() => {
-    const filtered = users.filter(
-      (u) =>
-        (roleFilter === "all" || u.role === roleFilter) &&
-        (planFilter === "all" || u.plan === planFilter),
-    );
-    return [...filtered].sort((a, b) => {
-      if (sortBy === "tokens") return b.totalTokens - a.totalTokens;
-      if (sortBy === "convos") return b.conversationCount - a.conversationCount;
-      return a.email.localeCompare(b.email);
-    });
-  }, [users, roleFilter, planFilter, sortBy]);
+  // Sorting + search are done server-side (see loadUsers) so they stay correct
+  // as the user list grows past one page. Only the role/plan filters are applied
+  // client-side over the current page.
+  const visibleUsers = useMemo(
+    () =>
+      users.filter(
+        (u) =>
+          (roleFilter === "all" || u.role === roleFilter) &&
+          (planFilter === "all" || u.plan === planFilter),
+      ),
+    [users, roleFilter, planFilter],
+  );
 
   const loadUsers = useCallback(async () => {
     const res = await api.get<{ items: AdminUser[] }>("/admin/users", {
-      params: { q: q || undefined, limit: 100 },
+      params: { q: q || undefined, limit: 100, sort: sortBy, order: sortDir },
     });
     setUsers(res.data.items);
-  }, [q]);
+  }, [q, sortBy, sortDir]);
 
   const loadMetrics = useCallback(async () => {
     const res = await api.get<Metrics>("/admin/metrics");
@@ -218,16 +228,36 @@ export default function AdminUsers() {
           </Field>
 
           <Field label={t.adminSortBy}>
-            <Dropdown<string>
-              value={sortBy}
-              onChange={(v) => setSortBy(v as SortBy)}
-              ariaLabel={t.adminSortBy}
-              options={[
-                { value: "email", label: t.adminSortEmail },
-                { value: "tokens", label: t.adminSortTokens },
-                { value: "convos", label: t.adminSortConvos },
-              ]}
-            />
+            <div className="admin-sort">
+              <Dropdown<string>
+                value={sortBy}
+                onChange={(v) => setSortBy(v as SortField)}
+                ariaLabel={t.adminSortBy}
+                options={[
+                  { value: "created", label: t.adminSortCreated },
+                  { value: "lastLogin", label: t.adminSortLastLogin },
+                  { value: "email", label: t.adminSortEmail },
+                  { value: "name", label: t.adminSortName },
+                  { value: "plan", label: t.adminSortPlan },
+                  { value: "status", label: t.adminSortStatus },
+                  { value: "role", label: t.adminSortRole },
+                  { value: "convos", label: t.adminSortConvos },
+                  { value: "tokens", label: t.adminSortTokens },
+                ]}
+              />
+              <Button
+                variant="secondary"
+                size="sm"
+                className="admin-sort__dir"
+                aria-label={sortDir === "desc" ? t.adminSortDesc : t.adminSortAsc}
+                title={sortDir === "desc" ? t.adminSortDesc : t.adminSortAsc}
+                onClick={() =>
+                  setSortDir((d) => (d === "desc" ? "asc" : "desc"))
+                }
+              >
+                {sortDir === "desc" ? "↓" : "↑"}
+              </Button>
+            </div>
           </Field>
         </div>
       </Card>

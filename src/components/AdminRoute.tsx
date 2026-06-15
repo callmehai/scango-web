@@ -2,8 +2,9 @@ import { Navigate, useLocation } from "react-router-dom";
 import { useAuth } from "../hooks/useAuth";
 import type { ReactNode } from "react";
 
-/** Like ProtectedRoute but also requires the `admin` or `tester` role.
- *  Testers get a read-only view (mutation controls are hidden in the pages). */
+/** Like ProtectedRoute but also requires the `admin` role.
+ *  Testers no longer have access to the admin panel (they only keep their
+ *  quota bypass elsewhere). */
 export default function AdminRoute({ children }: { children: ReactNode }) {
   const { user, ready } = useAuth();
   const location = useLocation();
@@ -28,7 +29,7 @@ export default function AdminRoute({ children }: { children: ReactNode }) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />;
   }
 
-  if (user.role !== "admin" && user.role !== "tester") {
+  if (user.role !== "admin") {
     return <Navigate to="/" replace />;
   }
 

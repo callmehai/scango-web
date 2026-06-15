@@ -126,6 +126,19 @@ export default function AdminSettings() {
         </Card>
       </Link>
 
+      {/* Link to payments */}
+      <Link to="/admin/payments" className="admin-link-anchor">
+        <Card interactive padding="md" className="admin-link-card">
+          <span className="admin-link-card__text">
+            <span className="admin-link-card__title">{t.adminPaymentsTitle}</span>
+            <span className="admin-link-card__desc">{t.adminPaymentsDesc}</span>
+          </span>
+          <span className="admin-link-card__arrow" aria-hidden="true">
+            →
+          </span>
+        </Card>
+      </Link>
+
       {/* AI configuration */}
       <Card as="section" padding="lg" className="admin-section">
         <h2 className="admin-section__title">

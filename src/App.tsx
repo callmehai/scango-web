@@ -11,6 +11,7 @@ import Register from "./pages/Register";
 import VerifyEmail from "./pages/VerifyEmail";
 import AdminSettings from "./pages/AdminSettings";
 import AdminUsers from "./pages/AdminUsers";
+import AdminPayments from "./pages/AdminPayments";
 import AppLayout from "./components/layout/AppLayout";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -115,6 +116,16 @@ function AppRoutes() {
           <AdminRoute>
             <AppLayout titleKey="adminUsersTitle" showBack>
               <AdminUsers />
+            </AppLayout>
+          </AdminRoute>
+        }
+      />
+      <Route
+        path="/admin/payments"
+        element={
+          <AdminRoute>
+            <AppLayout titleKey="adminPaymentsTitle" showBack>
+              <AdminPayments />
             </AppLayout>
           </AdminRoute>
         }

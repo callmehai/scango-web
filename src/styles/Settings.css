@@ -272,6 +272,10 @@
   color: var(--color-text-tertiary);
 }
 
+.settings__plan-buy {
+  margin-top: var(--space-2);
+}
+
 .settings__plans-note {
   margin: var(--space-4) 0 0;
   font-size: var(--text-sm);

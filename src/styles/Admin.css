@@ -285,6 +285,34 @@
   width: 100%;
 }
 
+/* Refund modal hint line */
+.admin-refund-hint {
+  margin: 0 0 var(--space-3);
+  font-size: var(--text-sm);
+  color: var(--color-text-secondary);
+  line-height: var(--leading-normal);
+}
+
+/* Sort = field dropdown + a direction (asc/desc) toggle button */
+.admin-sort {
+  display: flex;
+  align-items: stretch;
+  gap: var(--space-2);
+}
+
+.admin-sort .dropdown {
+  flex: 1 1 auto;
+  width: auto;
+  min-width: 0;
+}
+
+.admin-sort__dir {
+  flex: 0 0 auto;
+  min-width: 2.5rem;
+  font-size: var(--text-lg);
+  line-height: 1;
+}
+
 /* ============================================================
    AdminUsers — table (desktop) / card list (mobile)
    ============================================================ */

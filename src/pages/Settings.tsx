@@ -65,6 +65,10 @@ export default function Settings() {
   const [buyTarget, setBuyTarget] = useState<{ code: string; name: string } | null>(
     null,
   );
+  // PLANS is ordered cheap→expensive, so the array index doubles as a price rank.
+  // Only upgrades (higher rank) are buyable; downgrades wait until the current
+  // plan expires (prepaid model — no proration/refund). Mirrors the BE guard.
+  const currentRank = PLANS.findIndex((p) => p.code === (user?.plan ?? "free"));
 
   return (
     <div className="settings">
@@ -225,8 +229,18 @@ export default function Settings() {
 
         <Card padding="md">
           <ul className="settings__plans">
-            {PLANS.map((plan) => {
+            {PLANS.map((plan, index) => {
               const isCurrent = (user?.plan ?? "free") === plan.code;
+              const buyable =
+                plan.code !== "free" &&
+                !isCurrent &&
+                currentRank >= 0 &&
+                index > currentRank;
+              const isDowngrade =
+                plan.code !== "free" &&
+                !isCurrent &&
+                currentRank >= 0 &&
+                index < currentRank;
               return (
                 <li
                   key={plan.code}
@@ -250,7 +264,7 @@ export default function Settings() {
                         {t[plan.duration]}
                       </span>
                     )}
-                    {!isCurrent && plan.code !== "free" && (
+                    {buyable && (
                       <Button
                         variant="primary"
                         size="sm"
@@ -261,6 +275,11 @@ export default function Settings() {
                       >
                         {t.buyBtn}
                       </Button>
+                    )}
+                    {isDowngrade && (
+                      <span className="settings__plan-wait">
+                        {t.plansDowngradeHint}
+                      </span>
                     )}
                   </div>
                 </li>

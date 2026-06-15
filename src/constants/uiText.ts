@@ -90,6 +90,7 @@ export const UI_TEXT = {
 
         // ========== PAYMENT / CHECKOUT ==========
         buyBtn: "Mua",
+        plansDowngradeHint: "Đổi khi gói hiện tại hết hạn",
         checkoutTitle: "Mua gói",
         checkoutScanQr: "Quét mã QR bằng app ngân hàng để chuyển khoản",
         checkoutBank: "Ngân hàng",
@@ -539,6 +540,7 @@ export const UI_TEXT = {
 
         // ========== PAYMENT / CHECKOUT ==========
         buyBtn: "Buy",
+        plansDowngradeHint: "Available after your plan expires",
         checkoutTitle: "Buy plan",
         checkoutScanQr: "Scan the QR with your banking app to transfer",
         checkoutBank: "Bank",

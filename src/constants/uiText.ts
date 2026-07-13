@@ -332,6 +332,10 @@ export const UI_TEXT = {
 
         // ========== ADMIN PLAN STATS + REVENUE ==========
         adminPlanStatsTitle: "Người dùng theo gói",
+        adminExportExcel: "Xuất Excel",
+        adminExporting: "Đang xuất…",
+        adminExportEmpty: "Không có dữ liệu để xuất",
+        adminExportError: "Xuất Excel thất bại",
         adminRevenueTitle: "Doanh thu",
         adminRevenueDesc: "Thống kê thu nhập theo ngày",
         adminRevenueRange: "Khoảng thời gian",
@@ -825,6 +829,10 @@ export const UI_TEXT = {
 
         // ========== ADMIN PLAN STATS + REVENUE ==========
         adminPlanStatsTitle: "Subscribers per plan",
+        adminExportExcel: "Export Excel",
+        adminExporting: "Exporting…",
+        adminExportEmpty: "No data to export",
+        adminExportError: "Export failed",
         adminRevenueTitle: "Revenue",
         adminRevenueDesc: "Daily income statistics",
         adminRevenueRange: "Time range",

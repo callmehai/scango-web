@@ -16,6 +16,9 @@ import {
 } from "../components/ui";
 import type { BadgeVariant } from "../components/ui";
 import Dropdown from "../components/Dropdown";
+import Pagination from "../components/Pagination";
+import { exportToExcel, fileStamp } from "../utils/exportExcel";
+import { fetchAllPages } from "../utils/fetchAllPages";
 import api from "../api/axios";
 
 import "../styles/Admin.css";
@@ -49,6 +52,9 @@ export default function AdminPayments() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [exporting, setExporting] = useState(false);
 
   const [confirm, setConfirm] = useState<{
     kind: "approve" | "reject";
@@ -82,17 +88,24 @@ export default function AdminPayments() {
     loadErrorRef.current = t.adminLoadError;
   }, [t.adminLoadError]);
 
+  // Fetch every matching order (the endpoint caps limit at 100) so paging and
+  // Excel export cover the full filtered set. Payment volume is small.
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await api.get<{ items: AdminPayment[] }>("/admin/payments", {
-        params: {
-          status: statusFilter === "all" ? undefined : statusFilter,
-          limit: 100,
-        },
-      });
-      setItems(res.data.items);
+      const all = await fetchAllPages<AdminPayment>((skip, limit) =>
+        api
+          .get<{ items: AdminPayment[]; total: number }>("/admin/payments", {
+            params: {
+              status: statusFilter === "all" ? undefined : statusFilter,
+              skip,
+              limit,
+            },
+          })
+          .then((r) => r.data),
+      );
+      setItems(all);
     } catch {
       setError(loadErrorRef.current);
     } finally {
@@ -103,6 +116,15 @@ export default function AdminPayments() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const totalPages = Math.max(1, Math.ceil(items.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const pagedItems = items.slice((safePage - 1) * pageSize, safePage * pageSize);
+
+  // Filter/page-size changes return to page 1.
+  useEffect(() => {
+    setPage(1);
+  }, [statusFilter, pageSize]);
 
   const act = async (id: string, fn: () => Promise<unknown>) => {
     setBusyId(id);
@@ -135,6 +157,38 @@ export default function AdminPayments() {
   const fmtDate = (iso: string | null) =>
     iso ? new Date(iso).toLocaleString(systemLang === "vi" ? "vi-VN" : "en-US") : "—";
 
+  // Exports the current filtered set (all pages). Amount stays a raw number so
+  // Excel can sum it.
+  const exportPayments = async () => {
+    if (items.length === 0) {
+      toast.error(t.adminExportEmpty);
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportToExcel<AdminPayment>({
+        filename: `scango-payments-${fileStamp()}`,
+        sheetName: "Payments",
+        columns: [
+          { header: t.adminPayColOrder, value: (p) => p.orderCode },
+          { header: t.profileEmail, value: (p) => p.userEmail },
+          { header: t.profileName, value: (p) => p.userName },
+          { header: t.adminPayColPlan, value: (p) => planLabel(p.plan, t) },
+          { header: t.adminPayColAmount, value: (p) => p.amountVnd },
+          { header: t.adminPayColStatus, value: (p) => statusLabel(p.status) },
+          { header: t.adminPayColCreated, value: (p) => fmtDate(p.createdAt) },
+          { header: t.adminPayColPaid, value: (p) => fmtDate(p.paidAt) },
+          { header: t.adminPayColNote, value: (p) => p.note ?? "" },
+        ],
+        rows: items,
+      });
+    } catch {
+      toast.error(t.adminExportError);
+    } finally {
+      setExporting(false);
+    }
+  };
+
   return (
     <div className="admin-page">
       {/* Filter */}
@@ -151,6 +205,19 @@ export default function AdminPayments() {
               ]}
             />
           </Field>
+        </div>
+
+        <div className="admin-toolbar__actions">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={exportPayments}
+            loading={exporting}
+            disabled={exporting || loading || items.length === 0}
+            leftIcon={<span aria-hidden="true">⬇</span>}
+          >
+            {exporting ? t.adminExporting : t.adminExportExcel}
+          </Button>
         </div>
       </Card>
 
@@ -182,7 +249,7 @@ export default function AdminPayments() {
                 </tr>
               </thead>
               <tbody>
-                {items.map((p) => (
+                {pagedItems.map((p) => (
                   <tr key={p.id}>
                     <td data-label={t.adminPayColOrder}>
                       <code>{p.orderCode}</code>
@@ -255,6 +322,27 @@ export default function AdminPayments() {
             </table>
           </div>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && items.length > 0 && (
+        <Pagination
+          page={safePage}
+          pageSize={pageSize}
+          total={items.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          disabled={loading}
+          labels={{
+            nav: t.historyPaginationLabel,
+            first: t.historyPaginationFirst,
+            prev: t.historyPaginationPrev,
+            next: t.historyPaginationNext,
+            last: t.historyPaginationLast,
+            perPage: t.historyPerPage,
+            showing: t.historyShowingRange,
+          }}
+        />
       )}
 
       {/* Approve / reject confirmation */}

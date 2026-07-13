@@ -12,9 +12,13 @@ import {
   Field,
   Input,
   Spinner,
+  useToast,
 } from "../components/ui";
 import type { BadgeVariant } from "../components/ui";
 import Dropdown from "../components/Dropdown";
+import Pagination from "../components/Pagination";
+import { exportToExcel, fileStamp } from "../utils/exportExcel";
+import { fetchAllPages } from "../utils/fetchAllPages";
 import api from "../api/axios";
 
 type SortField =
@@ -68,6 +72,7 @@ export default function AdminUsers() {
   const { systemLang } = useSettings();
   const { user: me } = useAuth();
   const t = UI_TEXT[systemLang];
+  const toast = useToast();
   // Only admins reach this page now (AdminRoute), so canManage is effectively
   // always true here — kept as a defensive guard around the mutation controls.
   const canManage = me?.role === "admin";
@@ -84,6 +89,9 @@ export default function AdminUsers() {
   const [sortDir, setSortDir] = useState<SortDir>("desc");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [exporting, setExporting] = useState(false);
 
   // Sorting + search are done server-side (see loadUsers) so they stay correct
   // as the user list grows past one page. Only the role/plan filters are applied
@@ -98,11 +106,37 @@ export default function AdminUsers() {
     [users, roleFilter, planFilter],
   );
 
+  const totalPages = Math.max(1, Math.ceil(visibleUsers.length / pageSize));
+  const safePage = Math.min(Math.max(1, page), totalPages);
+  const pagedUsers = useMemo(
+    () => visibleUsers.slice((safePage - 1) * pageSize, safePage * pageSize),
+    [visibleUsers, safePage, pageSize],
+  );
+
+  // Return to page 1 whenever the query/filters/sort/page-size change so the
+  // user isn't stranded on a now-out-of-range page.
+  useEffect(() => {
+    setPage(1);
+  }, [q, roleFilter, planFilter, sortBy, sortDir, pageSize]);
+
+  // Fetch every matching row (the endpoint caps limit at 100) so filtering,
+  // paging and Excel export all operate on the complete result set. The admin
+  // user base is small, so pulling it all client-side is fine here.
   const loadUsers = useCallback(async () => {
-    const res = await api.get<{ items: AdminUser[] }>("/admin/users", {
-      params: { q: q || undefined, limit: 100, sort: sortBy, order: sortDir },
-    });
-    setUsers(res.data.items);
+    const items = await fetchAllPages<AdminUser>((skip, limit) =>
+      api
+        .get<{ items: AdminUser[]; total: number }>("/admin/users", {
+          params: {
+            q: q || undefined,
+            skip,
+            limit,
+            sort: sortBy,
+            order: sortDir,
+          },
+        })
+        .then((r) => r.data),
+    );
+    setUsers(items);
   }, [q, sortBy, sortDir]);
 
   const loadMetrics = useCallback(async () => {
@@ -171,6 +205,47 @@ export default function AdminUsers() {
     const id = deleteTarget.id;
     await act(id, () => api.delete(`/admin/users/${id}`));
     setDeleteTarget(null);
+  };
+
+  // Exports the current filtered set (all pages), not just the visible page.
+  const exportUsers = async () => {
+    if (visibleUsers.length === 0) {
+      toast.error(t.adminExportEmpty);
+      return;
+    }
+    setExporting(true);
+    try {
+      await exportToExcel<AdminUser>({
+        filename: `scango-users-${fileStamp()}`,
+        sheetName: "Users",
+        columns: [
+          { header: t.profileEmail, value: (u) => u.email },
+          { header: t.profileName, value: (u) => u.name },
+          { header: t.adminColRole, value: (u) => u.role },
+          { header: t.adminColPlan, value: (u) => planLabel(u.plan, t) },
+          {
+            header: t.adminColVerified,
+            value: (u) => (u.emailVerified ? "✓" : "✗"),
+          },
+          { header: t.adminColConvos, value: (u) => u.conversationCount },
+          { header: t.adminColTokens, value: (u) => u.totalTokens },
+          {
+            header: t.profileQuotaScans,
+            value: (u) => (u.limited ? `${u.scansUsed}/${u.scansLimit}` : "∞"),
+          },
+          {
+            header: t.profileQuotaAsks,
+            value: (u) => (u.limited ? `${u.asksUsed}/${u.asksLimit}` : "∞"),
+          },
+          { header: t.adminColStatus, value: (u) => u.status },
+        ],
+        rows: visibleUsers,
+      });
+    } catch {
+      toast.error(t.adminExportError);
+    } finally {
+      setExporting(false);
+    }
   };
 
   const statusVariant = (status: string): BadgeVariant =>
@@ -297,6 +372,19 @@ export default function AdminUsers() {
             </div>
           </Field>
         </div>
+
+        <div className="admin-toolbar__actions">
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={exportUsers}
+            loading={exporting}
+            disabled={exporting || loading || visibleUsers.length === 0}
+            leftIcon={<span aria-hidden="true">⬇</span>}
+          >
+            {exporting ? t.adminExporting : t.adminExportExcel}
+          </Button>
+        </div>
       </Card>
 
       {/* Content states */}
@@ -330,7 +418,7 @@ export default function AdminUsers() {
                 </tr>
               </thead>
               <tbody>
-                {visibleUsers.map((u) => (
+                {pagedUsers.map((u) => (
                   <tr key={u.id}>
                     <td data-label={t.adminColUser}>
                       <div className="admin-user">
@@ -445,6 +533,27 @@ export default function AdminUsers() {
             </table>
           </div>
         </Card>
+      )}
+
+      {/* Pagination */}
+      {!loading && !error && visibleUsers.length > 0 && (
+        <Pagination
+          page={safePage}
+          pageSize={pageSize}
+          total={visibleUsers.length}
+          onPageChange={setPage}
+          onPageSizeChange={setPageSize}
+          disabled={loading}
+          labels={{
+            nav: t.historyPaginationLabel,
+            first: t.historyPaginationFirst,
+            prev: t.historyPaginationPrev,
+            next: t.historyPaginationNext,
+            last: t.historyPaginationLast,
+            perPage: t.historyPerPage,
+            showing: t.historyShowingRange,
+          }}
+        />
       )}
 
       {/* Delete confirmation */}

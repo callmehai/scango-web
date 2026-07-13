@@ -285,6 +285,13 @@
   width: 100%;
 }
 
+/* Toolbar action row (e.g. Export to Excel), right-aligned under the filters. */
+.admin-toolbar__actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--space-3);
+}
+
 /* Refund modal hint line */
 .admin-refund-hint {
   margin: 0 0 var(--space-3);

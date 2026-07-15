@@ -245,8 +245,9 @@ export const UI_TEXT = {
         adminAiSection: "Cấu hình AI",
         adminModelLabel: "Model AI",
         adminModelDesc: "Model Gemini dùng để phân tích & trả lời",
-        adminModelFlash: "chất lượng cao",
+        adminModelFlash: "cân bằng",
         adminModelLite: "rẻ & nhanh",
+        adminModelPro: "mạnh nhất, chậm & đắt hơn",
         adminAiMockLabel: "Mock AI",
         adminAiMockDesc: "Bật = trả lời giả lập (không gọi Gemini, không tốn quota)",
         adminOcrMockLabel: "Mock OCR",
@@ -254,6 +255,9 @@ export const UI_TEXT = {
         adminTtsLabel: "Đọc bằng giọng Google (TTS)",
         adminTtsDesc:
           "Bật = giọng Google tự nhiên; Tắt = giọng mặc định của trình duyệt",
+        adminGroundingLabel: "Tra cứu & trích nguồn",
+        adminGroundingDesc:
+          "Bật = AI tự tra Google khi câu hỏi cần thông tin mới (giá cả, tin tức) và kèm nguồn ở cuối. Có tính phí theo lượt tra cứu.",
         adminSaving: "Đang lưu...",
         adminSaved: "Đã lưu ✓",
         adminLoadError: "Không tải được cấu hình",
@@ -742,8 +746,9 @@ export const UI_TEXT = {
         adminAiSection: "AI configuration",
         adminModelLabel: "AI model",
         adminModelDesc: "Gemini model used to analyse & answer",
-        adminModelFlash: "higher quality",
+        adminModelFlash: "balanced",
         adminModelLite: "cheaper & faster",
+        adminModelPro: "most capable, slower & pricier",
         adminAiMockLabel: "Mock AI",
         adminAiMockDesc: "On = canned responses (no Gemini call, no quota)",
         adminOcrMockLabel: "Mock OCR",
@@ -751,6 +756,9 @@ export const UI_TEXT = {
         adminTtsLabel: "Read aloud with Google voice (TTS)",
         adminTtsDesc:
           "On = natural Google voice; Off = the browser's default voice",
+        adminGroundingLabel: "Web lookup & sources",
+        adminGroundingDesc:
+          "On = the AI searches Google when a question needs fresh info (prices, news) and lists its sources. Billed per lookup.",
         adminSaving: "Saving...",
         adminSaved: "Saved ✓",
         adminLoadError: "Failed to load settings",

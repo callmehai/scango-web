@@ -13,6 +13,7 @@ interface AdminConfig {
   aiMock: boolean;
   ocrMock: boolean;
   ttsMock: boolean;
+  searchGrounding: boolean;
   availableModels: string[];
 }
 
@@ -71,7 +72,10 @@ export default function AdminSettings() {
 
   const patch = async (
     body: Partial<
-      Pick<AdminConfig, "geminiModel" | "aiMock" | "ocrMock" | "ttsMock">
+      Pick<
+        AdminConfig,
+        "geminiModel" | "aiMock" | "ocrMock" | "ttsMock" | "searchGrounding"
+      >
     >,
   ) => {
     if (!config || !canManage) return;
@@ -91,10 +95,12 @@ export default function AdminSettings() {
     }
   };
 
+  // Gắn nhãn theo tier thay vì liệt kê từng model, để model mới thêm ở BE
+  // (AdminController.AllowedModels) tự có nhãn mà không phải sửa chỗ này.
   const modelLabel = (m: string) => {
-    if (m === "gemini-2.5-flash") return `${m} — ${t.adminModelFlash}`;
-    if (m === "gemini-2.5-flash-lite") return `${m} — ${t.adminModelLite}`;
-    return m;
+    if (m.includes("-lite")) return `${m} — ${t.adminModelLite}`;
+    if (m.includes("-pro")) return `${m} — ${t.adminModelPro}`;
+    return `${m} — ${t.adminModelFlash}`;
   };
 
   if (!config) {
@@ -218,6 +224,24 @@ export default function AdminSettings() {
             checked={!config.ttsMock}
             onChange={(v) => patch({ ttsMock: !v })}
             ariaLabel={t.adminTtsLabel}
+            disabled={saving || !canManage}
+          />
+        </div>
+
+        {/* Tra cứu & trích nguồn — ON = đưa tool Google Search cho model */}
+        <div className="admin-switch-row">
+          <span className="admin-switch-row__text">
+            <span className="admin-switch-row__label">
+              {t.adminGroundingLabel}
+            </span>
+            <span className="admin-switch-row__desc">
+              {t.adminGroundingDesc}
+            </span>
+          </span>
+          <Switch
+            checked={config.searchGrounding}
+            onChange={(v) => patch({ searchGrounding: v })}
+            ariaLabel={t.adminGroundingLabel}
             disabled={saving || !canManage}
           />
         </div>
